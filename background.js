@@ -179,8 +179,8 @@ class NixxerCore {
     this.cookiesDeleted = 0;
     this.detectedDomains = new Map();
     this.settings = {
-      maxHostsEntries: 1000,
-      autoExportThreshold: 950,
+      maxHostsEntries: 500,
+      autoExportThreshold: 450,
       detectionSensitivity: 'high',
       exportFormat: 'pihole',
       blockSelfHosted: true,

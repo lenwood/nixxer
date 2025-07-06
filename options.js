@@ -6,8 +6,8 @@ class NixxerOptions {
       detectionSensitivity: 'high',
       blockSelfHosted: true,
       debugLogging: false,
-      maxHostsEntries: 1000,
-      autoExportThreshold: 950,
+      maxHostsEntries: 500,
+      autoExportThreshold: 450,
       autoCleanup: true,
       exportFormat: 'pihole'
     };
@@ -360,8 +360,8 @@ class NixxerOptions {
         detectionSensitivity: 'high',
         blockSelfHosted: true,
         debugLogging: false,
-        maxHostsEntries: 1000,
-        autoExportThreshold: 950,
+        maxHostsEntries: 500,
+        autoExportThreshold: 450,
         autoCleanup: true,
         exportFormat: 'pihole'
       };

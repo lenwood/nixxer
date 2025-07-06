@@ -66,10 +66,10 @@ class NixxerPopup {
     // Update status
     const statusEl = document.getElementById('status');
     if (this.stats.enabled) {
-      statusEl.textContent = 'Active - Blocking GA tracking';
+      statusEl.textContent = 'Active - Blocking web trackers';
       statusEl.className = 'status enabled';
     } else {
-      statusEl.textContent = 'Disabled - GA tracking allowed';
+      statusEl.textContent = 'Disabled - web tracking allowed';
       statusEl.className = 'status disabled';
     }
 
