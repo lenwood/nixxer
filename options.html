@@ -1,0 +1,473 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Nixxer Settings</title>
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+    
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      margin: 0;
+      padding: 0;
+      background: #f5f7fa;
+      color: #2d3748;
+    }
+    
+    .container {
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 40px 20px;
+    }
+    
+    .header {
+      text-align: center;
+      margin-bottom: 40px;
+    }
+    
+    .header h1 {
+      font-size: 32px;
+      font-weight: 700;
+      color: #2d3748;
+      margin: 0 0 10px 0;
+    }
+    
+    .header .version {
+      font-size: 14px;
+      color: #718096;
+      margin: 0 0 10px 0;
+      font-weight: 500;
+    }
+    
+    .header p {
+      font-size: 16px;
+      color: #718096;
+      margin: 0;
+    }
+    
+    .section {
+      background: white;
+      border-radius: 12px;
+      padding: 30px;
+      margin-bottom: 20px;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    }
+    
+    .section-title {
+      font-size: 20px;
+      font-weight: 600;
+      margin-bottom: 20px;
+      color: #2d3748;
+    }
+    
+    .setting-group {
+      margin-bottom: 25px;
+    }
+    
+    .setting-group:last-child {
+      margin-bottom: 0;
+    }
+    
+    .setting-label {
+      display: block;
+      font-weight: 500;
+      margin-bottom: 8px;
+      color: #4a5568;
+    }
+    
+    .setting-description {
+      font-size: 14px;
+      color: #718096;
+      margin-bottom: 12px;
+    }
+    
+    .form-control {
+      width: 100%;
+      padding: 12px;
+      border: 2px solid #e2e8f0;
+      border-radius: 8px;
+      font-size: 14px;
+      transition: border-color 0.2s;
+    }
+    
+    .form-control:focus {
+      outline: none;
+      border-color: #667eea;
+    }
+    
+    .form-control.number {
+      width: 200px;
+    }
+    
+    .range-container {
+      display: flex;
+      align-items: center;
+      gap: 15px;
+    }
+    
+    .range-input {
+      flex: 1;
+      height: 6px;
+      border-radius: 3px;
+      background: #e2e8f0;
+      outline: none;
+      -webkit-appearance: none;
+    }
+    
+    .range-input::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      background: #667eea;
+      cursor: pointer;
+    }
+    
+    .range-input::-moz-range-thumb {
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      background: #667eea;
+      cursor: pointer;
+      border: none;
+    }
+    
+    .range-value {
+      font-weight: 600;
+      color: #667eea;
+      min-width: 60px;
+    }
+    
+    .radio-group {
+      display: flex;
+      gap: 20px;
+      flex-wrap: wrap;
+    }
+    
+    .radio-option {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    
+    .radio-input {
+      margin: 0;
+    }
+    
+    .checkbox-group {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    
+    .checkbox-input {
+      margin: 0;
+    }
+    
+    .btn {
+      padding: 12px 24px;
+      border: none;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    
+    .btn-primary {
+      background: #667eea;
+      color: white;
+    }
+    
+    .btn-primary:hover {
+      background: #5a67d8;
+    }
+    
+    .btn-secondary {
+      background: #e2e8f0;
+      color: #4a5568;
+    }
+    
+    .btn-secondary:hover {
+      background: #cbd5e0;
+    }
+    
+    .btn-danger {
+      background: #f56565;
+      color: white;
+    }
+    
+    .btn-danger:hover {
+      background: #e53e3e;
+    }
+    
+    .actions {
+      display: flex;
+      gap: 15px;
+      justify-content: flex-start;
+      margin-top: 30px;
+    }
+    
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 20px;
+    }
+    
+    .stat-card {
+      background: #f7fafc;
+      padding: 20px;
+      border-radius: 8px;
+      text-align: center;
+    }
+    
+    .stat-number {
+      font-size: 24px;
+      font-weight: 700;
+      color: #667eea;
+      margin-bottom: 5px;
+    }
+    
+    .stat-label {
+      font-size: 12px;
+      color: #718096;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    
+    .domain-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 15px;
+    }
+    
+    .domain-table th,
+    .domain-table td {
+      padding: 12px;
+      text-align: left;
+      border-bottom: 1px solid #e2e8f0;
+    }
+    
+    .domain-table th {
+      background: #f7fafc;
+      font-weight: 600;
+      color: #4a5568;
+    }
+    
+    .domain-table tbody tr:hover {
+      background: #f7fafc;
+    }
+    
+    .success-message {
+      background: #c6f6d5;
+      color: #22543d;
+      padding: 12px;
+      border-radius: 8px;
+      margin-bottom: 20px;
+      display: none;
+    }
+    
+    .error-message {
+      background: #fed7d7;
+      color: #742a2a;
+      padding: 12px;
+      border-radius: 8px;
+      margin-bottom: 20px;
+      display: none;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>Nixxer Settings</h1>
+      <div class="version" id="version">Loading version...</div>
+      <p>Configure your Google Analytics blocking preferences</p>
+    </div>
+    
+    <div id="success-message" class="success-message"></div>
+    <div id="error-message" class="error-message"></div>
+    
+    <!-- Detection Settings -->
+    <div class="section">
+      <h2 class="section-title">Detection Settings</h2>
+      
+      <div class="setting-group">
+        <label class="setting-label">Detection Sensitivity</label>
+        <div class="setting-description">
+          Higher sensitivity detects more tracking attempts but may have false positives
+        </div>
+        <div class="radio-group">
+          <div class="radio-option">
+            <input type="radio" id="sensitivity-low" name="sensitivity" value="low" class="radio-input">
+            <label for="sensitivity-low">Low</label>
+          </div>
+          <div class="radio-option">
+            <input type="radio" id="sensitivity-medium" name="sensitivity" value="medium" class="radio-input">
+            <label for="sensitivity-medium">Medium</label>
+          </div>
+          <div class="radio-option">
+            <input type="radio" id="sensitivity-high" name="sensitivity" value="high" class="radio-input">
+            <label for="sensitivity-high">High</label>
+          </div>
+        </div>
+      </div>
+      
+      <div class="setting-group">
+        <div class="checkbox-group">
+          <input type="checkbox" id="block-self-hosted" class="checkbox-input">
+          <label for="block-self-hosted" class="setting-label">Block self-hosted Google Analytics</label>
+        </div>
+        <div class="setting-description">
+          Detect and block GA even when hosted on the same domain
+        </div>
+      </div>
+      
+      <div class="setting-group">
+        <div class="checkbox-group">
+          <input type="checkbox" id="debug-logging" class="checkbox-input">
+          <label for="debug-logging" class="setting-label">Enable debug logging</label>
+        </div>
+        <div class="setting-description">
+          Log detailed detection information to browser console
+        </div>
+      </div>
+    </div>
+    
+    <!-- Hosts File Management -->
+<!-- Network Blocklist Management -->
+    <div class="section">
+      <h2 class="section-title">Network Blocklist Management</h2>
+      
+      <div class="setting-group">
+        <label for="max-hosts-entries" class="setting-label">Maximum stored domains</label>
+        <div class="setting-description">
+          Limit the number of detected tracking domains kept in storage. Only third-party tracking domains (like google-analytics.com) are included in exports - never website domains.
+        </div>
+        <div class="range-container">
+          <input type="range" id="max-hosts-entries" class="range-input" min="100" max="5000" step="100">
+          <span class="range-value" id="max-hosts-value">1000</span>
+        </div>
+      </div>
+      
+      <div class="setting-group">
+        <label for="auto-export-threshold" class="setting-label">Auto-export threshold</label>
+        <div class="setting-description">
+          Automatically suggest exports when approaching storage limit
+        </div>
+        <div class="range-container">
+          <input type="range" id="auto-export-threshold" class="range-input" min="50" max="4950" step="50">
+          <span class="range-value" id="auto-export-value">950</span>
+        </div>
+      </div><!-- HERE -->
+      
+      <div class="setting-group">
+        <div class="checkbox-group">
+          <input type="checkbox" id="auto-cleanup" class="checkbox-input">
+          <label for="auto-cleanup" class="setting-label">Automatic cleanup</label>
+        </div>
+        <div class="setting-description">
+          Remove old entries automatically when limit is reached
+        </div>
+      </div>
+    </div>
+    
+    <!-- Export Settings -->
+    <div class="section">
+      <h2 class="section-title">Export Settings</h2>
+      
+      <div class="setting-group">
+        <label class="setting-label">Default export format</label>
+        <div class="setting-description">
+          Choose your preferred format for blocklist exports. <strong>Safe Export:</strong> Only third-party tracking domains are exported, never website domains (like cnn.com) even if they use self-hosted analytics.
+        </div>
+        <div class="radio-group">
+          <div class="radio-option">
+            <input type="radio" id="format-pihole" name="export-format" value="pihole" class="radio-input">
+            <label for="format-pihole">Pi-hole</label>
+          </div>
+          <div class="radio-option">
+            <input type="radio" id="format-nextdns" name="export-format" value="nextdns" class="radio-input">
+            <label for="format-nextdns">NextDNS</label>
+          </div>
+          <div class="radio-option">
+            <input type="radio" id="format-hosts" name="export-format" value="hosts" class="radio-input">
+            <label for="format-hosts">Hosts File</label>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Statistics -->
+    <div class="section">
+      <h2 class="section-title">Statistics</h2>
+      
+      <div class="stats-grid" id="stats-grid">
+        <div class="stat-card">
+          <div class="stat-number" id="total-blocked">0</div>
+          <div class="stat-label">Total Blocked</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-number" id="cookies-deleted">0</div>
+          <div class="stat-label">Cookies Deleted</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-number" id="domains-detected">0</div>
+          <div class="stat-label">Domains Detected</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-number" id="hosts-entries">0</div>
+          <div class="stat-label">Exportable Domains</div>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Detected Domains -->
+    <div class="section">
+      <h2 class="section-title">Detected Domains</h2>
+      
+      <table class="domain-table">
+        <thead>
+          <tr>
+            <th>Domain</th>
+            <th>First Seen</th>
+            <th>Last Seen</th>
+            <th>Frequency</th>
+            <th>Types</th>
+          </tr>
+        </thead>
+        <tbody id="domains-table-body">
+          <tr>
+            <td colspan="5" style="text-align: center; color: #718096;">Loading domains...</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    
+    <!-- Actions -->
+    <div class="section">
+      <h2 class="section-title">Data Management</h2>
+      
+      <div class="setting-group">
+        <div class="setting-description">
+          <strong>Import:</strong> Restore Nixxer backup files (.json format) containing your settings, detected domains, and statistics from a previous export.
+        </div>
+      </div>
+      
+      <div class="actions">
+        <button id="save-settings" class="btn btn-primary">Save Settings</button>
+        <button id="export-data" class="btn btn-secondary">Export Backup</button>
+        <button id="import-data" class="btn btn-secondary">Import Backup</button>
+        <button id="clear-data" class="btn btn-danger">Clear All Data</button>
+      </div>
+      
+      <input type="file" id="import-file" accept=".json" style="display: none;">
+    </div>
+  </div>
+  
+  <script src="options.js"></script>
+</body>
+</html>
