@@ -1,3 +1,104 @@
 # Nixxer .gitignore
 
+# Browser Extension Files
+# ========================
+
+# Extension build artifacts
+dist/
+build/
+*.crx
+*.xpi
+*.zip
+
+# Extension store packages
+extension.pem
+key.pem
+*.p12
+
+# Browser-specific extension files
+.web-extension-id
+
+# Node.js Dependencies
+# ===================
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+package-lock.json
+yarn.lock
+.pnpm-debug.log*
+
+# Hugo Website Files
+# ==================
+nixxer_website/
+
+
+# Hugo build output
+public/
+resources/_gen/
+.hugo_build.lock
+
+# Hugo cache
+hugocache/
+
+# Hugo themes (if using git submodules)
+# themes/
+
+# Editor and IDE Files
+# ====================
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
 .DS_Store
+Thumbs.db
+
+# Environment and Config
+# =====================
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Logs
+# ====
+logs/
+*.log
+
+# Temporary Files
+# ===============
+*.tmp
+*.temp
+.cache/
+.temp/
+
+# OS Generated Files
+# ==================
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Backup Files
+# ============
+*.bak
+*.backup
+*~
+
+# Development Dependencies
+# ========================
+coverage/
+.nyc_output/
+.coverage
+htmlcov/
+
+# Optional: Uncomment if using specific tools
+# ===========================================
+# .sass-cache/
+# *.css.map
+# *.js.map

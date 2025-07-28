@@ -1,535 +1,1028 @@
-// Nixxer Content Script - Step 2: Performance Optimized
+// Nixxer Content Script - Enhanced with Comprehensive Error Handling
 
-// Zombie cookie storage patterns
-const ZOMBIE_STORAGE_PATTERNS = [
-  /_ga_backup/,
-  /_gid_backup/,
-  /analytics_backup/,
-  /tracking_id/,
-  /user_fingerprint/,
-  /client_id_backup/,
-  /visitor_id_/,
-  /session_backup/
-];
+// Enhanced error logging for content script
+class ContentErrorLogger {
+  constructor() {
+    this.errorCounts = new Map();
+    this.maxErrorsPerType = 3;
+    this.debugMode = false;
+  }
 
-// Enhanced tracker script patterns
-const ENHANCED_TRACKER_PATTERNS = {
-  facebook: [
-    /fbq\s*\(/,
-    /facebook\.trackEvent/,
-    /_fbq\.push/,
-    /FB\.Event\.subscribe/,
-    /connect\.facebook\.net/
-  ],
-  
-  adobe: [
-    /s\.t\s*\(/,
-    /s\.tl\s*\(/,
-    /adobe_mc_/,
-    /AppMeasurement/,
-    /s_code\.js/,
-    /omniture/i
-  ],
-  
-  sessionRecording: [
-    /hj\s*\(/,
-    /FS\.identify/,
-    /LogRocket\.identify/,
-    /_lr_\w+/,
-    /smartlook\(/,
-    /mouseflow\(/,
-    /hotjar/i
-  ],
-  
-  tiktok: [
-    /ttq\.track/,
-    /ttq\.page/,
-    /tiktok_pixel/,
-    /analytics\.tiktok/
-  ]
-};
+  log(level, message, error = null, context = {}) {
+    const errorKey = `${level}:${message}`;
+    const count = this.errorCounts.get(errorKey) || 0;
+    
+    if (count >= this.maxErrorsPerType) {
+      return; // Prevent spam
+    }
+    
+    this.errorCounts.set(errorKey, count + 1);
+    
+    const logData = {
+      timestamp: new Date().toISOString(),
+      level,
+      message,
+      context,
+      ...(error && { error: error.message })
+    };
+    
+    // Log based on level and debug mode
+    if (this.debugMode || level === 'error') {
+      switch (level) {
+        case 'debug':
+          if (this.debugMode) console.debug('Nixxer Content Debug:', logData);
+          break;
+        case 'info':
+          if (this.debugMode) console.info('Nixxer Content Info:', logData);
+          break;
+        case 'warn':
+          console.warn('Nixxer Content Warning:', logData);
+          break;
+        case 'error':
+          console.error('Nixxer Content Error:', logData);
+          break;
+      }
+    }
+  }
 
-// OPTIMIZATION: Throttle function to limit detection frequency
-function throttle(func, limit) {
+  setDebugMode(enabled) {
+    this.debugMode = enabled;
+  }
+}
+
+// Performance and safety utilities
+function safeThrottle(func, limit) {
   let inThrottle;
-  return function() {
-    const args = arguments;
-    const context = this;
-    if (!inThrottle) {
-      func.apply(context, args);
-      inThrottle = true;
-      setTimeout(() => inThrottle = false, limit);
+  return function(...args) {
+    try {
+      if (!inThrottle) {
+        func.apply(this, args);
+        inThrottle = true;
+        setTimeout(() => inThrottle = false, limit);
+      }
+    } catch (error) {
+      logger.log('warn', 'Error in throttled function', error);
     }
   };
 }
 
-class NixxerContentDetector {
+function safeDebounce(func, delay) {
+  let timeoutId;
+  return function(...args) {
+    try {
+      clearTimeout(timeoutId);
+      timeoutId = setTimeout(() => {
+        try {
+          func.apply(this, args);
+        } catch (error) {
+          logger.log('warn', 'Error in debounced function', error);
+        }
+      }, delay);
+    } catch (error) {
+      logger.log('warn', 'Error setting up debounce', error);
+    }
+  };
+}
+
+// Safe content scanning with validation
+function safeScanTextContent(content, maxSize = 15000) {
+  try {
+    if (!content || typeof content !== 'string' || content.length === 0) {
+      return null;
+    }
+    
+    // Skip extremely large scripts to prevent memory issues
+    if (content.length > maxSize) {
+      const sample = content.slice(0, 5000) + content.slice(-5000);
+      return sample;
+    }
+    
+    return content;
+    
+  } catch (error) {
+    logger.log('warn', 'Error scanning text content', error, { contentLength: content?.length });
+    return null;
+  }
+}
+
+// Enhanced pattern validation
+function validatePatterns(patterns) {
+  try {
+    if (!Array.isArray(patterns)) {
+      return [];
+    }
+    
+    return patterns.filter(pattern => {
+      try {
+        if (pattern instanceof RegExp) {
+          // Test the regex with a simple string to ensure it's valid
+          pattern.test('test');
+          return true;
+        }
+        return false;
+      } catch (error) {
+        logger.log('warn', 'Invalid regex pattern detected', error);
+        return false;
+      }
+    });
+    
+  } catch (error) {
+    logger.log('error', 'Error validating patterns', error);
+    return [];
+  }
+}
+
+// Safe compiled regex patterns with validation
+const COMPILED_PATTERNS = {
+  zombie: validatePatterns([
+    /_ga_backup/,
+    /_gid_backup/,
+    /analytics_backup/,
+    /tracking_id/,
+    /user_fingerprint/,
+    /client_id_backup/,
+    /visitor_id_/,
+    /session_backup/
+  ]),
+  
+  facebook: validatePatterns([
+    /\bfbq\s*\(/,
+    /facebook\.trackEvent/,
+    /_fbq\.push/,
+    /FB\.Event\.subscribe/
+  ]),
+  
+  adobe: validatePatterns([
+    /\bs\.t\s*\(/,
+    /\bs\.tl\s*\(/,
+    /adobe_mc_/,
+    /AppMeasurement/,
+    /omniture/i
+  ]),
+  
+  sessionRecording: validatePatterns([
+    /\bhj\s*\(/,
+    /FS\.identify/,
+    /LogRocket\.identify/,
+    /_lr_\w+/,
+    /smartlook\(/,
+    /mouseflow\(/
+  ]),
+  
+  tiktok: validatePatterns([
+    /ttq\.track/,
+    /ttq\.page/,
+    /tiktok_pixel/
+  ]),
+  
+  googleAnalytics: validatePatterns([
+    /\bgtag\s*\(/,
+    /\bga\s*\(/,
+    /dataLayer\.push\s*\(/,
+    /google_tag_manager/,
+    /GoogleAnalyticsObject/,
+    /_gaq\.push/,
+    /gtm\.start/
+  ])
+};
+
+// Safe domain validation
+function validateTrackingDomains(domains) {
+  try {
+    if (!Array.isArray(domains) && !(domains instanceof Set)) {
+      return new Set();
+    }
+    
+    const validDomains = new Set();
+    const domainArray = Array.isArray(domains) ? domains : Array.from(domains);
+    
+    for (const domain of domainArray) {
+      try {
+        if (typeof domain === 'string' && domain.length > 0 && domain.length < 254) {
+          validDomains.add(domain.toLowerCase().trim());
+        }
+      } catch (error) {
+        logger.log('warn', 'Invalid domain in tracking domains list', error, { domain });
+      }
+    }
+    
+    return validDomains;
+    
+  } catch (error) {
+    logger.log('error', 'Error validating tracking domains', error);
+    return new Set();
+  }
+}
+
+const TRACKING_DOMAINS = validateTrackingDomains([
+  'google-analytics.com',
+  'googletagmanager.com',
+  'connect.facebook.net',
+  'facebook.com',
+  'hotjar.com',
+  'fullstory.com',
+  'logrocket.com',
+  'mouseflow.com',
+  'smartlook.com',
+  'analytics.tiktok.com',
+  'business-api.tiktok.com',
+  '2o7.net',
+  'omtrdc.net',
+  'demdex.net',
+  'everesttech.net'
+]);
+
+// Initialize logger
+const logger = new ContentErrorLogger();
+
+class SafeNixxerDetector {
   constructor() {
     this.detected = new Set();
-    this.domain = window.location.hostname;
+    this.domain = '';
+    this.scanCount = 0;
+    this.maxScans = 30;
+    this.initialized = false;
+    this.initializationError = null;
     
-    // OPTIMIZATION: Skip detection on certain domains/pages
+    // Safe domain extraction
+    try {
+      this.domain = window.location.hostname || '';
+    } catch (error) {
+      logger.log('error', 'Failed to get hostname', error);
+      this.domain = 'unknown';
+    }
+    
     if (this.shouldSkipDetection()) {
+      logger.log('debug', 'Skipping detection for this domain', null, { domain: this.domain });
       return;
     }
     
-    // OPTIMIZATION: Throttle message sending to background script
-    this.throttledReport = throttle(this.reportDetection.bind(this), 1000);
-    
-    this.init();
+    try {
+      // Create throttled and debounced functions with error handling
+      this.throttledReport = safeThrottle(this.reportDetection.bind(this), 1500);
+      this.debouncedZombieCleanup = safeDebounce(this.cleanupZombieStorage.bind(this), 3000);
+      
+      this.init();
+      
+    } catch (error) {
+      this.initializationError = error;
+      logger.log('error', 'Failed to initialize detector', error);
+    }
   }
 
-  // OPTIMIZATION: Skip detection on internal pages and development environments
   shouldSkipDetection() {
-    const skipDomains = [
-      'localhost',
-      '127.0.0.1',
-      'about:',
-      'chrome://',
-      'moz-extension://',
-      'chrome-extension://',
-      'chrome-devtools://',
-      'devtools://'
-    ];
-    
-    const currentUrl = window.location.href.toLowerCase();
-    
-    // Skip if URL matches any skip pattern
-    if (skipDomains.some(domain => currentUrl.includes(domain))) {
-      return true;
+    try {
+      const skipDomains = ['localhost', '127.0.0.1'];
+      const skipProtocols = ['chrome://', 'moz-extension://', 'chrome-extension://', 'file://'];
+      
+      let currentUrl = '';
+      try {
+        currentUrl = window.location.href.toLowerCase();
+      } catch (error) {
+        logger.log('warn', 'Could not get current URL', error);
+        return true; // Skip if we can't even get the URL
+      }
+      
+      const shouldSkip = skipDomains.some(domain => currentUrl.includes(domain)) ||
+                        skipProtocols.some(protocol => currentUrl.startsWith(protocol)) ||
+                        /^(192\.168\.|10\.|172\.(1[6-9]|2[0-9]|3[01])\.)/.test(this.domain);
+      
+      return shouldSkip;
+      
+    } catch (error) {
+      logger.log('warn', 'Error checking if should skip detection', error);
+      return true; // Skip on error for safety
     }
-    
-    // Skip if domain is private/local IP range
-    if (/^(192\.168\.|10\.|172\.(1[6-9]|2[0-9]|3[01])\.)/.test(this.domain)) {
-      return true;
-    }
-    
-    // Skip file:// URLs
-    if (currentUrl.startsWith('file://')) {
-      return true;
-    }
-    
-    return false;
   }
 
   init() {
-    // OPTIMIZATION: Use requestIdleCallback for non-critical initialization
-    if (window.requestIdleCallback) {
-      window.requestIdleCallback(() => {
-        this.performInitialization();
-      });
-    } else {
-      // Fallback for browsers without requestIdleCallback
-      setTimeout(() => {
-        this.performInitialization();
-      }, 100);
-    }
-  }
-
-  performInitialization() {
-    // Detect existing tracking
-    this.detectExistingGA();
-    
-    // Set up observers with optimized settings
-    this.setupOptimizedObservers();
-    
-    console.log('Nixxer content detector initialized with performance optimizations');
-  }
-
-  detectExistingGA() {
-    // Check for existing GA/GTM scripts
-    this.scanScripts();
-    
-    // Check for GA functions in global scope
-    this.scanGlobalFunctions();
-    
-    // Check for dataLayer
-    this.scanDataLayer();
-    
-    // Check for GA cookies (lightweight)
-    this.scanCookies();
-    
-    // OPTIMIZATION: Defer zombie cookie scanning to avoid blocking main thread
-    if (window.requestIdleCallback) {
-      window.requestIdleCallback(() => {
-        this.scanForZombieCookies();
-      });
-    } else {
-      setTimeout(() => {
-        this.scanForZombieCookies();
-      }, 2000);
-    }
-  }
-
-  scanScripts() {
-    const scripts = document.querySelectorAll('script[src]'); // Only check scripts with src first
-    
-    scripts.forEach(script => {
-      const src = script.src;
-      
-      if (src && this.isTrackingScript(src)) {
-        const trackingDomain = this.extractTrackingDomain(src);
-        this.throttledReport('script', `Script source: ${src}`, trackingDomain);
-      }
-    });
-    
-    // OPTIMIZATION: Limit inline script content scanning to first 50 scripts
-    const inlineScripts = Array.from(document.querySelectorAll('script:not([src])')).slice(0, 50);
-    
-    inlineScripts.forEach(script => {
-      const content = script.textContent || script.innerHTML;
-      if (content && content.length > 0) {
-        this.scanScriptContent(content);
-      }
-    });
-  }
-
-  scanScriptContent(content) {
-    // OPTIMIZATION: Skip very large scripts to avoid performance issues
-    if (content.length > 50000) { // Skip scripts larger than 50KB
-      return;
-    }
-    
-    // Your existing GA patterns...
-    const gaPatterns = [
-      /gtag\s*\(/,
-      /ga\s*\(/,
-      /dataLayer\.push\s*\(/,
-      /google_tag_manager/,
-      /GoogleAnalyticsObject/,
-      /_gaq\.push/,
-      /gtm\.start/
-    ];
-    
-    // Add new tracker patterns
-    const allPatterns = [
-      ...gaPatterns,
-      ...ENHANCED_TRACKER_PATTERNS.facebook,
-      ...ENHANCED_TRACKER_PATTERNS.adobe,
-      ...ENHANCED_TRACKER_PATTERNS.sessionRecording,
-      ...ENHANCED_TRACKER_PATTERNS.tiktok
-    ];
-    
-    // OPTIMIZATION: Test patterns efficiently - stop after first match
-    for (let i = 0; i < allPatterns.length; i++) {
-      const pattern = allPatterns[i];
-      if (pattern.test(content)) {
-        const trackerType = this.getTrackerType(pattern);
-        this.throttledReport('javascript', `${trackerType} pattern detected`, this.domain);
-        break; // Stop after first match to avoid redundant detections
-      }
-    }
-    
-    // Check for GTM containers
-    const gtmMatches = content.match(/GTM-[A-Z0-9]{4,8}/g);
-    if (gtmMatches) {
-      this.throttledReport('gtm', `Container: ${gtmMatches[0]}`, this.domain); // Only report first match
-    }
-    
-    // Check for measurement protocol in script content
-    if (content.includes('/collect') || content.includes('/mp/collect')) {
-      const urlMatches = content.match(/https?:\/\/([^\/\s"']+)/g);
-      if (urlMatches && urlMatches.length > 0) {
-        const collectUrl = urlMatches.find(url => url.includes('collect'));
-        if (collectUrl) {
-          const trackingDomain = this.extractTrackingDomain(collectUrl);
-          this.throttledReport('measurement', `Measurement protocol: ${collectUrl}`, trackingDomain);
-        }
+    try {
+      // Use requestIdleCallback for better performance if available
+      if (typeof window !== 'undefined' && window.requestIdleCallback) {
+        window.requestIdleCallback(() => {
+          this.performSafeDetection();
+        }, { timeout: 2000 });
       } else {
-        this.throttledReport('measurement', 'Self-hosted measurement protocol detected', this.domain);
+        setTimeout(() => {
+          this.performSafeDetection();
+        }, 200);
       }
-    }
-  }
-
-  getTrackerType(pattern) {
-    const patternStr = pattern.toString();
-    if (/fbq|facebook/.test(patternStr)) return 'Facebook';
-    if (/adobe|AppMeasurement|s\.t/.test(patternStr)) return 'Adobe';
-    if (/hj|FS\.|LogRocket|smartlook|mouseflow/.test(patternStr)) return 'Session Recording';
-    if (/ttq|tiktok/.test(patternStr)) return 'TikTok';
-    return 'Google Analytics';
-  }
-
-  scanForZombieCookies() {
-    // OPTIMIZATION: Wrap in try-catch and limit scope
-    try {
-      // Check LocalStorage with limited iterations
-      const maxKeys = Math.min(localStorage.length, 50); // Limit to 50 keys
-      for (let i = 0; i < maxKeys; i++) {
-        const key = localStorage.key(i);
-        if (key && ZOMBIE_STORAGE_PATTERNS.some(pattern => pattern.test(key))) {
-          this.throttledReport('zombie-storage', `LocalStorage key: ${key}`, this.domain);
-          // Optionally remove the zombie storage
-          localStorage.removeItem(key);
-        }
-      }
-    } catch (error) {
-      // localStorage might not be accessible in some contexts
-      console.warn('LocalStorage scan failed:', error);
-    }
-  }
-
-  scanGlobalFunctions() {
-    const gaFunctions = ['gtag', 'ga', 'dataLayer', 'google_tag_manager', '_gaq'];
-    
-    gaFunctions.forEach(func => {
-      if (typeof window[func] !== 'undefined') {
-        this.throttledReport('global', `Global function: ${func}`, this.domain);
-      }
-    });
-  }
-
-  scanDataLayer() {
-    if (window.dataLayer && Array.isArray(window.dataLayer)) {
-      this.throttledReport('dataLayer', `DataLayer with ${window.dataLayer.length} items`, this.domain);
       
-      // OPTIMIZATION: Only analyze first few dataLayer items
-      const itemsToAnalyze = Math.min(window.dataLayer.length, 5);
-      for (let i = 0; i < itemsToAnalyze; i++) {
-        const item = window.dataLayer[i];
-        if (item && typeof item === 'object') {
-          if (item.event || item['gtm.start'] || item['gtm.uniqueEventId']) {
-            this.throttledReport('dataLayer', `GTM event at index ${i}`, this.domain);
-            break; // Stop after first GTM event found
-          }
-        }
-      }
-    }
-  }
-
-  scanCookies() {
-    // OPTIMIZATION: Use document.cookie only once and cache result
-    const cookieString = document.cookie;
-    if (!cookieString) return;
-    
-    const cookies = cookieString.split(';');
-    const gaCookiePatterns = [
-      /^_ga=/,
-      /^_gid=/,
-      /^_gat/,
-      /^_gtag_/,
-      /^__utm/,
-      /^_gcl_/,
-      /^_gac_/,
-      /^_dc_gtm_/,
-      /^_fbc=/,
-      /^_fbp=/
-    ];
-    
-    // OPTIMIZATION: Limit cookie checking to first 30 cookies
-    const cookiesToCheck = cookies.slice(0, 30);
-    
-    cookiesToCheck.forEach(cookie => {
-      const trimmed = cookie.trim();
-      for (let i = 0; i < gaCookiePatterns.length; i++) {
-        if (gaCookiePatterns[i].test(trimmed)) {
-          this.throttledReport('cookie', `Cookie: ${trimmed.split('=')[0]}`, this.domain);
-          break; // Stop after first match
-        }
-      }
-    });
-  }
-
-  isTrackingScript(src) {
-    const gaScriptPatterns = [
-      /google-analytics\.com/,
-      /googletagmanager\.com/,
-      /gtag\/js/,
-      /gtm\.js/,
-      /analytics\.js/,
-      /ga\.js/,
-      /facebook\.net/,
-      /hotjar\.com/,
-      /fullstory\.com/,
-      /logrocket\.com/,
-      /mouseflow\.com/,
-      /smartlook\.com/,
-      /tiktok\.com/
-    ];
-    
-    return gaScriptPatterns.some(pattern => pattern.test(src));
-  }
-
-  extractTrackingDomain(url) {
-    try {
-      const urlObj = new URL(url);
-      return urlObj.hostname;
     } catch (error) {
-      // If URL parsing fails, try to extract domain manually
-      const match = url.match(/https?:\/\/([^\/]+)/);
-      return match ? match[1] : this.domain;
-    }
-  }
-
-  // OPTIMIZATION: Simplified observer setup
-  setupOptimizedObservers() {
-    // Mutation observer with throttling
-    const throttledMutationHandler = throttle((mutations) => {
-      this.handleMutations(mutations);
-    }, 500);
-
-    const observer = new MutationObserver(throttledMutationHandler);
-    
-    observer.observe(document.documentElement, {
-      childList: true,
-      subtree: true,
-      attributes: false, // Don't watch attributes for performance
-      characterData: false // Don't watch text changes
-    });
-    
-    // OPTIMIZATION: Simplified network monitoring
-    this.setupLightweightNetworkMonitoring();
-    
-    // OPTIMIZATION: Simplified dataLayer monitoring
-    this.setupLightweightDataLayerMonitoring();
-  }
-
-  handleMutations(mutations) {
-    // OPTIMIZATION: Limit mutation processing
-    const maxMutations = Math.min(mutations.length, 5);
-    
-    for (let i = 0; i < maxMutations; i++) {
-      const mutation = mutations[i];
-      
-      // Only check added script elements
-      mutation.addedNodes.forEach(node => {
-        if (node.nodeType === Node.ELEMENT_NODE && node.tagName === 'SCRIPT') {
-          this.checkNewScript(node);
-        }
-      });
-    }
-  }
-
-  checkNewScript(script) {
-    if (script.src && this.isTrackingScript(script.src)) {
-      const trackingDomain = this.extractTrackingDomain(script.src);
-      this.throttledReport('dynamic-script', `Dynamic script: ${script.src}`, trackingDomain);
-    }
-    
-    // OPTIMIZATION: Limit inline script content scanning
-    const content = script.textContent || script.innerHTML;
-    if (content && content.length > 0 && content.length < 10000) { // Only scan small inline scripts
-      this.scanScriptContent(content);
-    }
-  }
-
-  // OPTIMIZATION: Lightweight network monitoring with throttling
-  setupLightweightNetworkMonitoring() {
-    const throttledRequestHandler = throttle((url) => {
-      if (this.isTrackingRequest(url)) {
-        const trackingDomain = this.extractTrackingDomain(url);
-        this.throttledReport('network', `Network request: ${url}`, trackingDomain);
-      }
-    }, 2000);
-
-    // Override fetch
-    const originalFetch = window.fetch;
-    window.fetch = async (...args) => {
-      const url = args[0];
-      if (typeof url === 'string') {
-        throttledRequestHandler(url);
-      }
-      return originalFetch.apply(this, args);
-    };
-    
-    // Override XMLHttpRequest
-    const originalXHROpen = XMLHttpRequest.prototype.open;
-    XMLHttpRequest.prototype.open = function(method, url, ...args) {
-      if (typeof url === 'string') {
-        throttledRequestHandler(url);
-      }
-      return originalXHROpen.apply(this, [method, url, ...args]);
-    };
-  }
-
-  // OPTIMIZATION: Lightweight dataLayer monitoring
-  setupLightweightDataLayerMonitoring() {
-    // Monitor dataLayer changes with throttling
-    if (window.dataLayer) {
-      const originalPush = window.dataLayer.push;
-      const throttledDataLayerHandler = throttle((item) => {
-        if (item && typeof item === 'object') {
-          this.throttledReport('dataLayer-push', 'DataLayer push detected', this.domain);
+      logger.log('error', 'Error in init', error);
+      // Try fallback initialization
+      setTimeout(() => {
+        try {
+          this.performSafeDetection();
+        } catch (fallbackError) {
+          logger.log('error', 'Fallback initialization also failed', fallbackError);
         }
       }, 1000);
-
-      window.dataLayer.push = (...args) => {
-        args.forEach(throttledDataLayerHandler);
-        return originalPush.apply(window.dataLayer, args);
-      };
     }
   }
 
-  isTrackingRequest(url) {
-    const trackingPatterns = [
-      /\/collect(\?|$)/,
-      /\/g\/collect(\?|$)/,
-      /\/mp\/collect(\?|$)/,
-      /google-analytics\.com/,
-      /googletagmanager\.com/,
-      /facebook\.com\/tr/,
-      /connect\.facebook\.net/,
-      /hotjar\.com/,
-      /fullstory\.com/,
-      /analytics\.tiktok\.com/
-    ];
-    
-    return trackingPatterns.some(pattern => pattern.test(url));
+  performSafeDetection() {
+    try {
+      logger.log('debug', 'Starting safe detection', null, { domain: this.domain });
+      
+      // 1. Safe global checks
+      this.safeDetectTrackerGlobals();
+      
+      // 2. Safe script scanning
+      this.safeScriptScan();
+      
+      // 3. Safe observer setup
+      this.setupSafeObserver();
+      
+      // 4. Safe periodic tasks
+      this.scheduleSafeTasks();
+      
+      this.initialized = true;
+      logger.log('info', 'Safe detector initialized successfully');
+      
+    } catch (error) {
+      logger.log('error', 'Error in safe detection', error);
+      this.initializationError = error;
+    }
   }
 
-  reportDetection(method, details, targetDomain = null) {
-    const detectionKey = `${method}:${details}`;
-    
-    if (!this.detected.has(detectionKey)) {
+  safeDetectTrackerGlobals() {
+    try {
+      const globals = ['gtag', 'ga', 'dataLayer', 'google_tag_manager', '_gaq', 'fbq', '_fbq', 's', 'hj', 'FS', 'LogRocket', 'ttq'];
+      
+      for (const global of globals) {
+        try {
+          if (typeof window !== 'undefined' && typeof window[global] !== 'undefined') {
+            this.safeReport('global', `Global: ${global}`, this.domain);
+            
+            // Special dataLayer analysis with error handling
+            if (global === 'dataLayer') {
+              this.safeAnalyzeDataLayer();
+            }
+            
+            // Limit detections to avoid spam
+            if (this.detected.size >= 5) break;
+          }
+        } catch (error) {
+          logger.log('warn', `Error checking global ${global}`, error);
+        }
+      }
+      
+    } catch (error) {
+      logger.log('error', 'Error detecting tracker globals', error);
+    }
+  }
+
+  safeAnalyzeDataLayer() {
+    try {
+      if (typeof window === 'undefined' || 
+          !window.dataLayer || 
+          !Array.isArray(window.dataLayer)) {
+        return;
+      }
+      
+      this.safeReport('dataLayer', `DataLayer with ${window.dataLayer.length} items`, this.domain);
+      
+      // Check first few items for GTM patterns (performance limited)
+      const itemsToCheck = Math.min(window.dataLayer.length, 3);
+      for (let i = 0; i < itemsToCheck; i++) {
+        try {
+          const item = window.dataLayer[i];
+          if (item && typeof item === 'object') {
+            if (item.event || item['gtm.start'] || item['gtm.uniqueEventId']) {
+              this.safeReport('dataLayer', `GTM event at index ${i}`, this.domain);
+              break;
+            }
+          }
+        } catch (error) {
+          logger.log('warn', `Error analyzing dataLayer item ${i}`, error);
+        }
+      }
+      
+    } catch (error) {
+      logger.log('warn', 'Error analyzing dataLayer', error);
+    }
+  }
+
+  safeScriptScan() {
+    try {
+      // Safe script collection with error handling
+      let headScripts = [];
+      let bodyScripts = [];
+      
+      try {
+        if (document.head) {
+          headScripts = Array.from(document.head.querySelectorAll('script') || []);
+        }
+      } catch (error) {
+        logger.log('warn', 'Error getting head scripts', error);
+      }
+      
+      try {
+        if (document.body) {
+          bodyScripts = Array.from(document.body.querySelectorAll('script') || []);
+        }
+      } catch (error) {
+        logger.log('warn', 'Error getting body scripts', error);
+      }
+      
+      // Scan scripts with limits and error handling
+      this.safeScanScriptCollection(headScripts.slice(0, 15), 'head');
+      this.safeScanScriptCollection(bodyScripts.slice(0, 10), 'body');
+      
+    } catch (error) {
+      logger.log('error', 'Error in script scanning', error);
+    }
+  }
+
+  safeScanScriptCollection(scripts, location) {
+    try {
+      if (!Array.isArray(scripts)) {
+        logger.log('warn', 'Invalid scripts array provided', null, { location });
+        return;
+      }
+      
+      for (const script of scripts) {
+        if (this.scanCount >= this.maxScans) break;
+        
+        try {
+          // Check external scripts
+          if (script.src) {
+            if (this.safeIsTrackingScript(script.src)) {
+              const domain = this.safeExtractTrackingDomain(script.src);
+              this.safeReport('script', `${location} script: ${script.src}`, domain);
+              this.scanCount++;
+            }
+          } 
+          // Check inline scripts with size limits
+          else {
+            const content = safeScanTextContent(script.textContent || script.innerHTML);
+            if (content) {
+              this.safeScanInlineScript(content, location);
+              this.scanCount++;
+            }
+          }
+        } catch (error) {
+          logger.log('warn', `Error scanning script in ${location}`, error);
+        }
+      }
+      
+    } catch (error) {
+      logger.log('error', 'Error scanning script collection', error, { location });
+    }
+  }
+
+  safeScanInlineScript(content, location) {
+    try {
+      if (!content || typeof content !== 'string') {
+        return;
+      }
+      
+      // Efficient pattern matching with error handling
+      const patterns = [
+        { name: 'Google Analytics', patterns: COMPILED_PATTERNS.googleAnalytics },
+        { name: 'Facebook', patterns: COMPILED_PATTERNS.facebook },
+        { name: 'Adobe', patterns: COMPILED_PATTERNS.adobe },
+        { name: 'Session Recording', patterns: COMPILED_PATTERNS.sessionRecording },
+        { name: 'TikTok', patterns: COMPILED_PATTERNS.tiktok }
+      ];
+      
+      for (const { name, patterns: patternList } of patterns) {
+        try {
+          for (const pattern of patternList) {
+            try {
+              if (pattern.test(content)) {
+                this.safeReport('javascript', `${name} in ${location}`, this.domain);
+                return; // Stop after first match
+              }
+            } catch (error) {
+              logger.log('warn', `Error testing pattern for ${name}`, error);
+            }
+          }
+        } catch (error) {
+          logger.log('warn', `Error processing patterns for ${name}`, error);
+        }
+      }
+      
+      // Safe GTM container detection
+      try {
+        const gtmMatches = content.match(/GTM-[A-Z0-9]{4,8}/);
+        if (gtmMatches) {
+          this.safeReport('gtm', `Container: ${gtmMatches[0]}`, this.domain);
+        }
+      } catch (error) {
+        logger.log('warn', 'Error detecting GTM containers', error);
+      }
+      
+      // Safe measurement protocol detection
+      try {
+        if (content.includes('/collect') || content.includes('/mp/collect')) {
+          this.safeDetectMeasurementProtocol(content);
+        }
+      } catch (error) {
+        logger.log('warn', 'Error detecting measurement protocol', error);
+      }
+      
+    } catch (error) {
+      logger.log('error', 'Error scanning inline script', error, { location });
+    }
+  }
+
+  safeDetectMeasurementProtocol(content) {
+    try {
+      const urlPattern = /https?:\/\/([^\/\s"']+)/g;
+      const matches = content.match(urlPattern);
+      
+      if (matches && Array.isArray(matches)) {
+        try {
+          const collectUrl = matches.find(url => url.includes('collect'));
+          if (collectUrl) {
+            const domain = this.safeExtractTrackingDomain(collectUrl);
+            this.safeReport('measurement', `Measurement protocol: ${collectUrl}`, domain);
+          }
+        } catch (error) {
+          logger.log('warn', 'Error processing collect URL', error);
+        }
+      } else {
+        this.safeReport('measurement', 'Self-hosted measurement protocol', this.domain);
+      }
+      
+    } catch (error) {
+      logger.log('warn', 'Error in measurement protocol detection', error);
+    }
+  }
+
+  safeIsTrackingScript(src) {
+    try {
+      if (!src || typeof src !== 'string') {
+        return false;
+      }
+      
+      try {
+        const url = new URL(src);
+        const hostname = url.hostname.toLowerCase();
+        return TRACKING_DOMAINS.has(hostname) || 
+               Array.from(TRACKING_DOMAINS).some(domain => hostname.endsWith('.' + domain));
+      } catch (urlError) {
+        // Fallback to string matching if URL parsing fails
+        return Array.from(TRACKING_DOMAINS).some(domain => 
+          src.toLowerCase().includes(domain.toLowerCase())
+        );
+      }
+      
+    } catch (error) {
+      logger.log('warn', 'Error checking tracking script', error, { src });
+      return false;
+    }
+  }
+
+  safeExtractTrackingDomain(url) {
+    try {
+      if (!url || typeof url !== 'string') {
+        return this.domain;
+      }
+      
+      try {
+        return new URL(url).hostname;
+      } catch (urlError) {
+        // Fallback to regex extraction
+        const match = url.match(/https?:\/\/([^\/]+)/);
+        return match ? match[1] : this.domain;
+      }
+      
+    } catch (error) {
+      logger.log('warn', 'Error extracting tracking domain', error, { url });
+      return this.domain;
+    }
+  }
+
+  setupSafeObserver() {
+    try {
+      if (typeof MutationObserver === 'undefined') {
+        logger.log('warn', 'MutationObserver not available');
+        return;
+      }
+      
+      const observer = new MutationObserver((mutations) => {
+        try {
+          this.handleSafeMutations(mutations);
+        } catch (error) {
+          logger.log('error', 'Error in mutation observer', error);
+        }
+      });
+      
+      const observeOptions = {
+        childList: true,
+        subtree: true,
+        attributeFilter: ['src']
+      };
+      
+      // Safe observer setup
+      try {
+        if (document.head) {
+          observer.observe(document.head, observeOptions);
+        }
+      } catch (error) {
+        logger.log('warn', 'Error observing document.head', error);
+      }
+      
+      try {
+        if (document.body) {
+          observer.observe(document.body, observeOptions);
+        }
+      } catch (error) {
+        logger.log('warn', 'Error observing document.body', error);
+      }
+      
+      // Auto-disconnect with error handling
+      setTimeout(() => {
+        try {
+          observer.disconnect();
+        } catch (error) {
+          logger.log('warn', 'Error disconnecting observer', error);
+        }
+      }, 45000);
+      
+    } catch (error) {
+      logger.log('error', 'Error setting up mutation observer', error);
+    }
+  }
+
+  handleSafeMutations(mutations) {
+    try {
+      // Throttle mutation handling
+      if (this.mutationThrottled) return;
+      this.mutationThrottled = true;
+      setTimeout(() => this.mutationThrottled = false, 2000);
+      
+      if (!Array.isArray(mutations)) {
+        logger.log('warn', 'Invalid mutations array');
+        return;
+      }
+      
+      // Limit mutation processing
+      const maxMutations = Math.min(mutations.length, 3);
+      
+      for (let i = 0; i < maxMutations; i++) {
+        try {
+          const mutation = mutations[i];
+          
+          if (mutation && mutation.addedNodes) {
+            for (const node of mutation.addedNodes) {
+              try {
+                if (node.nodeType === Node.ELEMENT_NODE && node.tagName === 'SCRIPT') {
+                  this.safProcessDynamicScript(node);
+                  return; // Process only first script
+                }
+              } catch (error) {
+                logger.log('warn', 'Error processing added node', error);
+              }
+            }
+          }
+        } catch (error) {
+          logger.log('warn', 'Error processing mutation', error);
+        }
+      }
+      
+    } catch (error) {
+      logger.log('error', 'Error handling mutations', error);
+    }
+  }
+
+  safProcessDynamicScript(script) {
+    try {
+      if (!script) return;
+      
+      if (script.src && this.safeIsTrackingScript(script.src)) {
+        const domain = this.safeExtractTrackingDomain(script.src);
+        this.safeReport('dynamic-script', `Dynamic: ${script.src}`, domain);
+      } else if (!script.src) {
+        // Process inline dynamic scripts with limits
+        const content = safeScanTextContent(script.textContent || script.innerHTML, 5000);
+        if (content) {
+          this.safeScanInlineScript(content, 'dynamic');
+        }
+      }
+      
+    } catch (error) {
+      logger.log('warn', 'Error processing dynamic script', error);
+    }
+  }
+
+  scheduleSafeTasks() {
+    try {
+      // Initial zombie cleanup with delay and error handling
+      setTimeout(() => {
+        try {
+          this.debouncedZombieCleanup();
+        } catch (error) {
+          logger.log('warn', 'Error in initial zombie cleanup', error);
+        }
+      }, 2000);
+      
+      // Periodic cleanup with error handling
+      setInterval(() => {
+        try {
+          this.debouncedZombieCleanup();
+        } catch (error) {
+          logger.log('warn', 'Error in periodic zombie cleanup', error);
+        }
+      }, 25000);
+      
+      // Safe DataLayer monitoring setup
+      this.setupSafeDataLayerMonitoring();
+      
+    } catch (error) {
+      logger.log('error', 'Error scheduling safe tasks', error);
+    }
+  }
+
+  setupSafeDataLayerMonitoring() {
+    try {
+      if (typeof window === 'undefined' || 
+          !window.dataLayer || 
+          !Array.isArray(window.dataLayer)) {
+        return;
+      }
+      
+      const originalPush = window.dataLayer.push;
+      if (typeof originalPush !== 'function') {
+        logger.log('warn', 'DataLayer push is not a function');
+        return;
+      }
+      
+      const throttledHandler = safeThrottle((item) => {
+        try {
+          if (item && typeof item === 'object') {
+            this.safeReport('dataLayer-push', 'DataLayer push detected', this.domain);
+          }
+        } catch (error) {
+          logger.log('warn', 'Error in dataLayer push handler', error);
+        }
+      }, 2000);
+
+      window.dataLayer.push = function(...args) {
+        try {
+          args.forEach(throttledHandler);
+          return originalPush.apply(this, args);
+        } catch (error) {
+          logger.log('warn', 'Error in dataLayer push override', error);
+          // Fallback to original function
+          return originalPush.apply(this, args);
+        }
+      };
+      
+    } catch (error) {
+      logger.log('error', 'Error setting up dataLayer monitoring', error);
+    }
+  }
+
+  cleanupZombieStorage() {
+    try {
+      if (typeof Storage === 'undefined' || typeof localStorage === 'undefined') {
+        logger.log('debug', 'localStorage not available');
+        return;
+      }
+      
+      let cleanedCount = 0;
+      const maxKeys = Math.min(localStorage.length, 30);
+      
+      for (let i = 0; i < maxKeys; i++) {
+        try {
+          const key = localStorage.key(i);
+          if (key && typeof key === 'string') {
+            
+            // Safe pattern matching
+            let isZombieKey = false;
+            for (const pattern of COMPILED_PATTERNS.zombie) {
+              try {
+                if (pattern.test(key)) {
+                  isZombieKey = true;
+                  break;
+                }
+              } catch (error) {
+                logger.log('warn', 'Error testing zombie pattern', error);
+              }
+            }
+            
+            if (isZombieKey) {
+              try {
+                localStorage.removeItem(key);
+                cleanedCount++;
+                
+                if (cleanedCount === 1) {
+                  this.safeReport('zombie-storage', `Removed: ${key}`, this.domain);
+                }
+              } catch (removalError) {
+                logger.log('warn', 'Failed to remove zombie storage item', removalError, { key });
+              }
+            }
+          }
+        } catch (error) {
+          logger.log('warn', 'Error processing localStorage key', error);
+        }
+      }
+      
+      if (cleanedCount > 0) {
+        logger.log('debug', 'Zombie storage cleanup completed', null, { cleanedCount });
+      }
+      
+    } catch (error) {
+      logger.log('warn', 'localStorage cleanup failed', error);
+    }
+  }
+
+  safeReport(method, details, targetDomain = null) {
+    try {
+      if (!method || !details) {
+        logger.log('warn', 'Invalid report parameters', null, { method, details });
+        return;
+      }
+      
+      const detectionKey = `${method}:${details}:${targetDomain || this.domain}`;
+      
+      if (this.detected.has(detectionKey)) {
+        return; // Already reported
+      }
+      
       this.detected.add(detectionKey);
       
-      // OPTIMIZATION: Limit detection cache size
-      if (this.detected.size > 50) {
-        // Clear oldest detections (simple approach)
-        const keysToDelete = Array.from(this.detected).slice(0, 25);
-        keysToDelete.forEach(key => this.detected.delete(key));
+      // Manage cache size to prevent memory issues
+      if (this.detected.size > 25) {
+        const oldKeys = Array.from(this.detected).slice(0, 10);
+        oldKeys.forEach(key => this.detected.delete(key));
       }
       
       const domainToReport = targetDomain || this.domain;
       
-      // Send to background script with error handling
-      try {
-        browser.runtime.sendMessage({
-          type: 'GA_DETECTED',
-          domain: domainToReport,
-          method: method,
-          details: details,
-          timestamp: Date.now(),
-          url: window.location.href,
-          hostDomain: this.domain
-        }).catch(() => {
-          // Ignore errors if background script is not available
-        });
-      } catch (error) {
-        // Ignore messaging errors
+      // Safe message sending with error handling
+      this.sendSafeMessage({
+        type: 'GA_DETECTED',
+        domain: domainToReport,
+        method: method,
+        details: details,
+        timestamp: Date.now(),
+        url: this.getCurrentUrl(),
+        hostDomain: this.domain
+      });
+      
+      logger.log('debug', 'Detection reported', null, { 
+        method, 
+        details, 
+        domain: domainToReport 
+      });
+      
+    } catch (error) {
+      logger.log('error', 'Error in safe report', error, { method, details });
+    }
+  }
+
+  getCurrentUrl() {
+    try {
+      return window.location.href;
+    } catch (error) {
+      logger.log('warn', 'Could not get current URL', error);
+      return 'unknown';
+    }
+  }
+
+  sendSafeMessage(message) {
+    try {
+      if (typeof browser === 'undefined' || !browser.runtime) {
+        logger.log('debug', 'Browser runtime not available');
+        return;
       }
       
-      if (console && console.log) {
-        console.log(`Nixxer detected tracking: ${method} - ${details} (domain: ${domainToReport})`);
+      // Add timeout to prevent hanging
+      const messagePromise = browser.runtime.sendMessage(message);
+      
+      if (messagePromise && typeof messagePromise.catch === 'function') {
+        messagePromise.catch((error) => {
+          // Don't log every messaging error as it's common when popup is closed
+          logger.log('debug', 'Message sending failed (likely normal)', null, { 
+            messageType: message.type 
+          });
+        });
       }
+      
+    } catch (error) {
+      logger.log('debug', 'Error sending message', error, { messageType: message?.type });
+    }
+  }
+
+  reportDetection(method, details, targetDomain = null) {
+    // Maintain backward compatibility
+    this.safeReport(method, details, targetDomain);
+  }
+}
+
+// Safe initialization with comprehensive error handling
+function safeInitializeDetector() {
+  try {
+    // Check if we're in a valid browser environment
+    if (typeof window === 'undefined' || typeof document === 'undefined') {
+      logger.log('warn', 'Not in browser environment, skipping initialization');
+      return;
+    }
+    
+    // Initialize detector
+    new SafeNixxerDetector();
+    
+  } catch (error) {
+    logger.log('error', 'Critical error initializing detector', error);
+    
+    // Try minimal fallback initialization
+    try {
+      setTimeout(() => {
+        try {
+          logger.log('info', 'Attempting fallback initialization');
+          // Minimal detector with just global checks
+          const globals = ['gtag', 'ga', 'dataLayer', 'fbq', 'hj'];
+          for (const global of globals) {
+            try {
+              if (typeof window !== 'undefined' && typeof window[global] !== 'undefined') {
+                logger.log('info', `Fallback detected: ${global}`);
+              }
+            } catch (globalError) {
+              // Ignore individual global check errors
+            }
+          }
+        } catch (fallbackError) {
+          logger.log('error', 'Even fallback initialization failed', fallbackError);
+        }
+      }, 2000);
+    } catch (timeoutError) {
+      logger.log('error', 'Could not even set fallback timeout', timeoutError);
     }
   }
 }
 
-// OPTIMIZATION: Initialize only when appropriate
-if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', () => {
-    new NixxerContentDetector();
-  });
-} else {
-  // OPTIMIZATION: Delay initialization to avoid blocking page load
-  if (window.requestIdleCallback) {
-    window.requestIdleCallback(() => {
-      new NixxerContentDetector();
+// Enhanced initialization with multiple strategies
+try {
+  if (document.readyState === 'loading') {
+    // Document still loading
+    document.addEventListener('DOMContentLoaded', () => {
+      try {
+        safeInitializeDetector();
+      } catch (error) {
+        logger.log('error', 'Error in DOMContentLoaded handler', error);
+      }
     });
-  } else {
+    
+    // Fallback in case DOMContentLoaded doesn't fire
     setTimeout(() => {
-      new NixxerContentDetector();
-    }, 500);
+      try {
+        if (document.readyState !== 'loading') {
+          safeInitializeDetector();
+        }
+      } catch (error) {
+        logger.log('error', 'Error in fallback initialization', error);
+      }
+    }, 3000);
+    
+  } else {
+    // Document already loaded
+    if (typeof window !== 'undefined' && window.requestIdleCallback) {
+      window.requestIdleCallback(() => {
+        safeInitializeDetector();
+      }, { timeout: 1500 });
+    } else {
+      setTimeout(() => {
+        safeInitializeDetector();
+      }, 300);
+    }
+  }
+  
+} catch (error) {
+  logger.log('error', 'Critical error in initialization setup', error);
+  
+  // Last resort: direct initialization
+  try {
+    setTimeout(() => {
+      safeInitializeDetector();
+    }, 5000);
+  } catch (lastResortError) {
+    console.error('Nixxer: Complete initialization failure', lastResortError);
+  }
+}
+
+// Global error handlers for the content script
+if (typeof window !== 'undefined') {
+  try {
+    window.addEventListener('error', (event) => {
+      if (event.error && event.error.message && 
+          event.error.message.includes('Nixxer')) {
+        logger.log('error', 'Unhandled error in content script', event.error);
+      }
+    });
+    
+    window.addEventListener('unhandledrejection', (event) => {
+      if (event.reason && typeof event.reason === 'object' && 
+          event.reason.message && event.reason.message.includes('Nixxer')) {
+        logger.log('error', 'Unhandled promise rejection in content script', event.reason);
+      }
+    });
+  } catch (error) {
+    console.error('Could not set up global error handlers:', error);
   }
 }

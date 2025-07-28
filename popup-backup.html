@@ -20,32 +20,6 @@
       border-bottom: 1px solid rgba(255, 255, 255, 0.2);
     }
     
-    .header-top {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      margin-bottom: 5px;
-    }
-    
-    .header-icon {
-      width: 32px;
-      height: 32px;
-      background: white;
-      border-radius: 6px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-      margin-right: 12px;
-      flex-shrink: 0;
-    }
-    
-    .header-icon img {
-      width: 24px;
-      height: 24px;
-      object-fit: contain;
-    }
-    
     .domain-header {
       display: flex;
       justify-content: space-between;
@@ -121,11 +95,11 @@
       background: #a78bfa;
     }
 
+
     .logo {
       font-size: 24px;
       font-weight: bold;
-      margin: 0;
-      color: white;
+      margin-bottom: 5px;
     }
     
     .version {
@@ -416,12 +390,7 @@
 </head>
 <body>
   <div class="header">
-    <div class="header-top">
-      <div class="header-icon">
-        <img src="icons/icon-32.png" alt="Nixxer Icon" />
-      </div>
-      <div class="logo">Nixxer</div>
-    </div>
+    <div class="logo">Nixxer</div>
     <div class="version" id="version">Loading version...</div>
     <div class="status" id="status">Loading...</div>
   </div>

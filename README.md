@@ -60,22 +60,22 @@ A powerful Firefox browser extension that detects and blocks web tracking across
    ├── popup.js
    ├── options.html
    ├── options.js
-   └── icons/ (create this folder and add icons)
+   └── icons/
+       ├── icon-16.png
+       ├── icon-32.png
+       ├── icon-48.png
+       ├── icon-128.png
+       └── icon-256.png
    ```
 
-2. **Create extension icons**
-   - Create an `icons` folder in your extension directory
-   - Add PNG icons in sizes: 16x16, 32x32, 48x48, 128x128
-   - Name them: `icon-16.png`, `icon-32.png`, `icon-48.png`, `icon-128.png`
-
-3. **Load in Firefox**
+2. **Load in Firefox**
    - Open Firefox and navigate to `about:debugging`
    - Click "This Firefox" in the left sidebar
    - Click "Load Temporary Add-on"
    - Select the `manifest.json` file from your Nixxer folder
 
 ### Permanent Installation
-For permanent installation, the extension would need to be signed by Mozilla or installed as a developer edition.
+If the extension is signed by Mozilla users will have the option for installing directly via Mozilla Add-Ons.
 
 ## Usage
 
