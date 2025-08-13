@@ -1,0 +1,21 @@
+<div id="main-menu-mobile" class="main-menu-mobile">
+  <ul>
+    {{ $currentPage := . }}
+    {{ range site.Menus.main }}
+    {{ if ne .Name "GitHub" }}
+    <li class="menu-item-{{ .Name | lower }}{{ if $currentPage.IsMenuCurrent "main" . }} active{{ end }}">
+      <a href="{{ .URL }}">
+        <span>{{ .Name }}</span>
+      </a>
+    </li>
+    {{ end }}
+    {{end}}
+    
+    <!-- GitHub icon link -->
+    <li class="menu-item-github">
+      <a href="https://github.com/lenwood/nixxer" rel="noopener" title="View on GitHub">
+        <img src="/images/github-mark.svg" alt="GitHub" style="width: 24px; height: 24px; filter: brightness(0) invert(1);">
+      </a>
+    </li>
+  </ul>
+</div>

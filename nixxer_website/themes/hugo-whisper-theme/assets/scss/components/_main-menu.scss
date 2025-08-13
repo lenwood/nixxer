@@ -1,0 +1,44 @@
+.main-menu {
+  display: none;
+  @include media-breakpoint-up(md) {
+    display: block;
+  }
+  > ul {
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    font-family: $font-family-base;
+    > li {
+      list-style: none;
+      font-size: 14px;
+      > a {
+        padding: 10px 14px 10px 14px;
+        display: inline-block;
+        font-weight: normal;
+        text-decoration: none;
+        color: $primary;
+        &:hover {
+          text-decoration: underline;
+          color: $primary;
+        }
+      }
+      &.active {
+        > a {
+          font-weight: bold;
+        }
+      }
+    }
+  }
+  .menu-item-github {
+    img {
+      // Convert black GitHub icon to your site's primary green color
+      filter: brightness(0) saturate(100%) invert(31%) sepia(89%) saturate(1291%) hue-rotate(108deg) brightness(93%) contrast(85%);
+      transition: filter 0.2s ease;
+    }
+    
+    a:hover img {
+      // Lighter green on hover (matches $link-hover-color behavior)
+      filter: brightness(0) saturate(100%) invert(47%) sepia(89%) saturate(1291%) hue-rotate(108deg) brightness(110%) contrast(85%);
+    }
+  }
+}

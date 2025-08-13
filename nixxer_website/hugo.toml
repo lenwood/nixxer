@@ -1,0 +1,80 @@
+baseURL = 'http://localhost:1313/'
+languageCode = 'en-us'
+title = 'Nixxer'
+theme = 'hugo-whisper-theme'
+
+# All parameters in one [params] section
+[params]
+  # Main sections for sidebar (adjust to your content structure)
+  mainSections = ["docs", "blog"]
+  
+  # Homepage content
+  homepage_intro = "Welcome to your site!"
+  homepage_button_text = "Get Started"
+  homepage_button_link = "/docs/"
+  
+  # Logo paths (adjust these to your actual logo files)
+  [params.logo]
+    standard = "images/logo.png"
+    mobile = "images/logo-mobile.png"
+  
+  # Optional: Homepage hero image
+  # homepage_image = "images/hero.png"
+  
+  # Footer
+  [params.footer]
+    copyright_text = "© 2025 Nixxer. All rights reserved. <a href='/privacy/'>Privacy</a>"
+  
+  # Optional: Google Analytics
+  # google_analytics_id = "G-XXXXXXXXXX"
+  
+  # Homepage meta tags for SEO
+  [params.homepage_meta_tags]
+    meta_description = "Your site description"
+    meta_og_title = "Nixxer"
+    meta_og_type = "website"
+    meta_og_url = "http://localhost:1313/"
+    meta_og_image = "images/og-image.png"
+    meta_og_description = "Your site description"
+    meta_twitter_card = "summary_large_image"
+    meta_twitter_site = "@yoursite"
+    meta_twitter_creator = "@yourcreator"
+
+  [params.mermaid]
+    align = 'center'
+
+# Navigation menu
+# [[menu.main]]
+#   name = "Home"
+#   url = "/"
+#   weight = 1
+
+[[menu.main]]
+  name = "Docs"
+  url = "/docs/"
+  weight = 1
+
+[[menu.main]]
+  name = "FAQ"
+  url = "/faq/"
+  weight = 2
+
+[[menu.main]]
+  name = "Whitepaper"
+  url = "/whitepaper/"
+  weight = 3
+
+# Markup settings for modern Hugo
+[markup]
+  [markup.goldmark]
+    [markup.goldmark.renderer]
+      unsafe = true  # Allow HTML in markdown if needed
+  [markup.highlight]
+    style = 'github'
+    lineNos = false
+    codeFences = true
+    # [markup.goldmark.extensions]
+    #   [markup.goldmark.extensions.passthrough]
+    #     enable = true
+    #     [markup.goldmark.extensions.passthrough.delimiters]
+    #       block = [["```mermaid", "```"]]

@@ -1,0 +1,31 @@
+{{ define "header_css" }}{{ end }}
+{{ define "body_classes" }}page-default-single{{ end }}
+{{ define "header_classes" }}{{ end }}
+
+{{ define "main" }}
+<div class="container pt-2 pt-md-6 pb-3 pb-md-6">
+  <div class="row">
+    {{ if and .Params.toc .TableOfContents }}
+    <div class="col-12 col-md-9">
+      <h1 class="title">{{.Title}}</h1>
+      <div class="content {{if .Site.Params.enable_anchor_link}}{{ "anchor-link-enabled" }}{{ end }}">
+        {{.Content}}
+      </div>
+    </div>
+    <div class="col-12 col-md-3">
+      <div class="toc-sidebar">
+        <h5>On this page</h5>
+        {{ .TableOfContents }}
+      </div>
+    </div>
+    {{ else }}
+    <div class="col-12">
+      <h1 class="title">{{.Title}}</h1>
+      <div class="content {{if .Site.Params.enable_anchor_link}}{{ "anchor-link-enabled" }}{{ end }}">
+        {{.Content}}
+      </div>
+    </div>
+    {{ end }}
+  </div>
+</div>
+{{ end }}
