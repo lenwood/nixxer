@@ -368,34 +368,21 @@ const isNewTrackerName = NEW_TRACKER_COOKIE_PATTERNS.some(pattern => pattern.tes
 
 ## License
 
-This extension is provided as-is for educational and privacy protection purposes. Use responsibly and in accordance with website terms of service and applicable privacy laws.
+This extension is provided under the MIT License for educational and privacy protection purposes. Use responsibly and in accordance with website terms of service and applicable privacy laws.
 
 ## Changelog
 
-### Version 1.2.0 - Multi-Platform Tracking Protection
-- **🆕 Facebook/Meta tracking detection** - Pixel, Conversions API, social plugins
-- **🆕 Adobe Analytics support** - Omniture, AppMeasurement, Experience Cloud
-- **🆕 Session recording protection** - Hotjar, FullStory, LogRocket, Mouseflow, SmartLook
-- **🆕 TikTok tracking detection** - Pixel and business analytics
-- **🆕 Zombie cookie protection** - LocalStorage, IndexedDB, canvas fingerprinting
-- **🆕 Enhanced export formats** - AdGuard Home support added
-- **🆕 Tracker type classification** - 3rd-party vs 1st-party indicators
-- **🆕 Advanced persistence protection** - Multiple anti-tracking techniques
-- **⚡ Performance improvements** - Optimized pattern matching and memory usage
-- **📊 Enhanced statistics** - Multi-tracker analytics and detailed reporting
-
-### Version 1.1.3
-- **Fixed domain detection** - prevents legitimate websites from being blocked
-- **Smart blocking logic** - distinguishes third-party vs self-hosted analytics
-- **Improved accuracy** - only tracking domains added to network blocklists
-- **Enhanced content script** - better detection of tracking vs content domains
-
-### Version 1.0.0
-- Initial release with Google Analytics and GTM focus
-- Basic hosts file management
-- Multi-format export support
-- Comprehensive settings interface
-- Real-time statistics tracking
+### Version 1.0.0 - Initial Release
+- **🛡️ Multi-Platform Tracking Protection** - Google Analytics, Facebook/Meta, Adobe Analytics, TikTok, session recording tools
+- **🎯 Intelligent Detection Methods** - Real-time request blocking, cookie pattern matching, JavaScript function detection
+- **📊 Smart Domain Management** - Selective network blocking with third-party vs self-hosted classification
+- **📤 Export & Migration Tools** - Pi-hole, NextDNS, hosts file, and AdGuard Home formats
+- **🔒 Zombie Cookie Protection** - LocalStorage, IndexedDB, and canvas fingerprinting prevention
+- **📈 Detailed Analytics** - Real-time statistics with tracker type classification
+- **⚡ Performance Optimized** - Efficient pattern matching with minimal browser impact
+- **🛡️ Privacy-First Design** - All processing local, no external data transmission
+- **🔧 Advanced Configuration** - Comprehensive settings with sensitivity controls
+- **📋 Export Safety** - Only third-party tracking domains included in network blocklists
 
 ---
 

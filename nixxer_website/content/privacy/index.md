@@ -137,6 +137,20 @@ Since we don't collect external data, there's no traditional "data use" to descr
 - GitHub Pages may use minimal cookies for their hosting service
 - Your browser extension blocks tracking from other websites as designed
 
+## Firefox Add-ons Compliance
+
+**Mozilla Review Process:**
+
+- This extension has been reviewed and approved by Mozilla's Add-ons team
+- All source code is available for public review and security auditing
+- Mozilla Add-ons policies are strictly followed regarding data collection and privacy
+
+**User Rights on Mozilla Platform:**
+
+- Report issues through the Firefox Add-ons support system
+- Access to extension source code through our GitHub repository
+- Ability to verify privacy claims through code inspection
+
 ## Future Services and Changes
 
 **Premium Services:**
@@ -196,20 +210,25 @@ Since we don't collect external data, there's no traditional "data use" to descr
 
 **Privacy Questions:**
 
-- Email: [privacy@your-domain.com]
-- GitHub: [Your GitHub repository URL]
-- Response time: We aim to respond within 48 hours
+- GitHub Issues: For privacy-related questions, create an issue at github.com/lenwood/nixxer with the "privacy" label
+- Response time: We typically respond within 48-72 hours
 
 **Technical Support:**
 
-- For technical issues, please use our GitHub repository
-- For privacy-specific concerns, use the privacy email above
+- GitHub Issues: Primary support channel at github.com/lenwood/nixxer
+- Firefox Add-ons: Support section on our Mozilla Add-ons listing page
+- Documentation: Visit our FAQ section at www.nixxer.io/faq
+
+**For Security Concerns:**
+
+- GitHub Security Advisories: Use the private security advisory feature for sensitive security issues
+- This ensures responsible disclosure while protecting user security
 
 ## Open Source Transparency
 
 **Code Verification:**
 
-- Our extension source code is publicly available on GitHub
+- Our extension source code is publicly available on GitHub at github.com/lenwood/nixxer
 - You can verify our privacy claims by reviewing the code
 - We welcome security audits and privacy reviews from the community
 
@@ -222,7 +241,7 @@ Since we don't collect external data, there's no traditional "data use" to descr
 
 **Governing Law:**
 
-- This policy is governed by the laws of [Your Jurisdiction]
+- This policy is governed by the laws of the United States
 - We are committed to complying with applicable privacy laws worldwide
 - In case of conflicts between laws, we will apply the most protective standard
 

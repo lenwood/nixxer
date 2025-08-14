@@ -1,8 +1,8 @@
 {
   "manifest_version": 2,
   "name": "Nixxer",
-  "version": "1.2.0",
-  "description": "Detects and blocks web tracking across websites with intelligent network-level blocklist management and advanced anti-persistence protection.",
+  "version": "1.0.0",
+  "description": "Comprehensive web tracking protection with intelligent network-level blocklist management. Blocks Google Analytics, Facebook tracking, Adobe Analytics, session recording, and more.",
   
   "permissions": [
     "cookies",
@@ -24,7 +24,8 @@
       "matches": ["<all_urls>"],
       "exclude_matches": [
         "*://localhost/*",
-        "*://127.0.0.1/*"
+        "*://127.0.0.1/*",
+        "file:///*"
       ],
       "js": ["content.js"],
       "run_at": "document_start",
@@ -34,7 +35,7 @@
   
   "browser_action": {
     "default_popup": "popup.html",
-    "default_title": "Nixxer - Block Web Tracking",
+    "default_title": "Nixxer - Web Tracking Protection",
     "default_icon": {
       "16": "icons/icon-16.png",
       "32": "icons/icon-32.png",
@@ -55,5 +56,19 @@
     "128": "icons/icon-128.png"
   },
   
-  "web_accessible_resources": ["icons/*"]
+  "applications": {
+    "gecko": {
+      "id": "extension@nixxer.io",
+      "strict_min_version": "91.0"
+    }
+  },
+  
+  "author": "Chris Leonard",
+  
+  "homepage_url": "https://www.nixxer.io",
+  
+  "developer": {
+    "name": "Chris Leonard",
+    "url": "https://github.com/lenwood"
+  }
 }
