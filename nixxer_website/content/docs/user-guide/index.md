@@ -3,6 +3,7 @@ date = '2025-07-07T22:55:11-05:00'
 draft = false
 weight = 15
 title = 'User Guide'
+description = 'Learn how to operate the Nixxer Firefox extension. This page covers the popup interface, detection types, blocking modes, export formats for Pi-hole/NextDNS/AdGuard, advanced settings, and network-level integration steps.'
 +++
 
 ### Getting Started

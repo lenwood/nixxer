@@ -3,6 +3,7 @@ date = '2025-08-12T22:05:30-05:00'
 draft = false
 weight = 25
 title = 'Integration with Network Blockers'
+description = 'Nixxer is designed to work in tandem with a network blocker. This page covers how these complementary tools work together to protect you from being tracked. It also shows how to export blocklists to simplify the process.'
 +++
 
 Using Nixxer in tandem with a network blocker ensures that common analytics packages are blocked regardless of where they are hosted or how they're masked. And Nixxer makes it easy to work with common tools.

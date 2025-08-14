@@ -3,6 +3,7 @@ date = '2025-08-12T19:37:30-05:00'
 draft = false
 weight = 20
 title = 'Options'
+description = 'The Nixxer Options page is your control center for configuring tracking detection, managing blocked domains, and integrating with network-level blockers like Pi-hole and NextDNS. This comprehensive interface gives you granular control over how Nixxer protects your privacy while browsing.'
 +++
 
 The Nixxer Options page is your control center for configuring tracking detection, managing blocked domains, and integrating with network-level blockers like Pi-hole and NextDNS. This comprehensive interface gives you granular control over how Nixxer protects your privacy while browsing.

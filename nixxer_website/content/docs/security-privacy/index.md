@@ -3,6 +3,7 @@ date = '2025-07-07T23:05:14-05:00'
 draft = false
 weight = 40
 title = 'Security & Privacy'
+description = 'Learn how this plugin works to protect your privacy.'
 +++
 
 ### Privacy Principles

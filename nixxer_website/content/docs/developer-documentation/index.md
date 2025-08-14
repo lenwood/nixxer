@@ -3,6 +3,7 @@ date = '2025-07-07T22:56:08-05:00'
 draft = false
 weight = 30
 title = 'Developer Documentation'
+description = "Basic info about the plugin's architecture and how to expand it's capabilities."
 +++
 
 ### Architecture Overview

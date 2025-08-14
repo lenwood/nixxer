@@ -3,6 +3,7 @@ date = '2025-07-07T22:53:30-05:00'
 draft = false
 weight = 10
 title = 'Quickstart'
+description = "Get started with the extension here. Learn how to install the plugin and it's basic configuration. It also covers the core concepts of the plugin."
 +++
 
 ### Getting Started

@@ -3,6 +3,7 @@ date = '2025-07-07T23:04:29-05:00'
 draft = false
 weight = 35
 title = 'Troubleshooting'
+description = "If you're having trouble with the plugin begin here."
 +++
 
 ### Common Issues
