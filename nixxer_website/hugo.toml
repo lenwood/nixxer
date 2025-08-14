@@ -1,4 +1,4 @@
-baseURL = 'http://www.nixxer.io/'
+baseURL = 'https://www.nixxer.io/'
 languageCode = 'en-us'
 title = 'Nixxer'
 theme = 'hugo-whisper-theme'
