@@ -210,12 +210,12 @@ Since we don't collect external data, there's no traditional "data use" to descr
 
 **Privacy Questions:**
 
-- GitHub Issues: For privacy-related questions, create an issue at github.com/lenwood/nixxer with the "privacy" label
+- GitHub Issues: For privacy-related questions, create an issue at [github.com/lenwood/nixxer](https://github.com/lenwood/nixxer) with the "privacy" label
 - Response time: We typically respond within 48-72 hours
 
 **Technical Support:**
 
-- GitHub Issues: Primary support channel at github.com/lenwood/nixxer
+- GitHub Issues: Primary support channel at [github.com/lenwood/nixxer](https://github.com/lenwood/nixxer)
 - Firefox Add-ons: Support section on our Mozilla Add-ons listing page
 - Documentation: Visit our FAQ section at www.nixxer.io/faq
 
@@ -228,7 +228,7 @@ Since we don't collect external data, there's no traditional "data use" to descr
 
 **Code Verification:**
 
-- Our extension source code is publicly available on GitHub at github.com/lenwood/nixxer
+- Our extension source code is publicly available on GitHub at [github.com/lenwood/nixxer](https://github.com/lenwood/nixxer)
 - You can verify our privacy claims by reviewing the code
 - We welcome security audits and privacy reviews from the community
 
