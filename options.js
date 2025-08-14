@@ -1,4 +1,4 @@
-// Enhanced Nixxer Options Script with Comprehensive Error Handling
+// Enhanced Nixxer Options Script with Safe DOM Manipulation
 
 // Advanced error handling and recovery system
 class OptionsErrorHandler {
@@ -80,6 +80,158 @@ class OptionsErrorHandler {
 
   getCriticalErrors() {
     return this.criticalErrors.slice(-10); // Return last 10 critical errors
+  }
+}
+
+// Safe DOM manipulation utilities
+class OptionsDOMHelper {
+  static createTextElement(tag, text, className = null) {
+    const element = document.createElement(tag);
+    element.textContent = text;
+    if (className) {
+      element.className = className;
+    }
+    return element;
+  }
+
+  static createTableRow(cells) {
+    const row = document.createElement('tr');
+    cells.forEach(cellData => {
+      const cell = document.createElement('td');
+      if (typeof cellData === 'string') {
+        cell.textContent = cellData;
+      } else if (cellData.text) {
+        cell.textContent = cellData.text;
+        if (cellData.title) {
+          cell.title = cellData.title;
+        }
+        if (cellData.style) {
+          cell.style.cssText = cellData.style;
+        }
+      }
+      row.appendChild(cell);
+    });
+    return row;
+  }
+
+  static createErrorPage(message, details = null) {
+    const container = document.createElement('div');
+    container.className = 'container';
+
+    const header = document.createElement('div');
+    header.className = 'header';
+    
+    const title = this.createTextElement('h1', 'Nixxer Settings');
+    const errorSubtitle = this.createTextElement('p', '⚠️ Extension Error');
+    errorSubtitle.style.color = '#ef4444';
+    
+    header.appendChild(title);
+    header.appendChild(errorSubtitle);
+
+    const errorSection = document.createElement('div');
+    errorSection.className = 'section';
+    
+    const errorTitle = this.createTextElement('h2', 'Error', 'section-title');
+    const errorMessage = this.createTextElement('p', `The options page failed to initialize properly: ${message}`);
+    errorMessage.style.cssText = 'color: #ef4444; margin-bottom: 20px;';
+    
+    const errorList = document.createElement('ul');
+    errorList.style.cssText = 'color: #6b7280; margin-bottom: 20px;';
+    
+    const errorReasons = [
+      'Extension permissions issues',
+      'Storage access problems', 
+      'Browser compatibility issues',
+      'Corrupted extension data'
+    ];
+    
+    errorReasons.forEach(reason => {
+      const listItem = this.createTextElement('li', reason);
+      errorList.appendChild(listItem);
+    });
+
+    const buttonContainer = document.createElement('div');
+    buttonContainer.style.marginTop = '20px';
+    
+    const retryButton = document.createElement('button');
+    retryButton.textContent = 'Retry Initialization';
+    retryButton.className = 'btn btn-primary';
+    retryButton.onclick = () => window.location.reload();
+    
+    const resetButton = document.createElement('button');
+    resetButton.textContent = 'Reset Extension Data';
+    resetButton.className = 'btn btn-danger';
+    resetButton.style.marginLeft = '10px';
+    resetButton.onclick = async () => {
+      try {
+        if (confirm('This will reset all extension data and reload the page. Continue?')) {
+          await browser.storage.local.clear();
+          window.location.reload();
+        }
+      } catch (error) {
+        alert('Failed to clear storage data: ' + error.message);
+      }
+    };
+    
+    buttonContainer.appendChild(retryButton);
+    buttonContainer.appendChild(resetButton);
+    
+    errorSection.appendChild(errorTitle);
+    errorSection.appendChild(errorMessage);
+    errorSection.appendChild(errorList);
+    errorSection.appendChild(buttonContainer);
+
+    if (details) {
+      const detailsSection = document.createElement('div');
+      detailsSection.className = 'section';
+      
+      const detailsTitle = this.createTextElement('h2', 'Error Details', 'section-title');
+      const detailsContent = document.createElement('div');
+      detailsContent.style.cssText = 'background: #f7fafc; padding: 15px; border-radius: 8px; font-family: monospace; font-size: 12px; max-height: 200px; overflow-y: auto;';
+      
+      details.forEach(detail => {
+        const detailDiv = document.createElement('div');
+        detailDiv.style.cssText = 'margin-bottom: 10px; padding: 5px; border-left: 3px solid #ef4444;';
+        
+        const timestamp = this.createTextElement('strong', detail.timestamp);
+        const message = this.createTextElement('span', `: ${detail.message}`);
+        
+        detailDiv.appendChild(timestamp);
+        detailDiv.appendChild(message);
+        
+        if (detail.error) {
+          const errorDetail = this.createTextElement('div', detail.error);
+          errorDetail.style.color = '#6b7280';
+          detailDiv.appendChild(document.createElement('br'));
+          detailDiv.appendChild(errorDetail);
+        }
+        
+        detailsContent.appendChild(detailDiv);
+      });
+      
+      detailsSection.appendChild(detailsTitle);
+      detailsSection.appendChild(detailsContent);
+      container.appendChild(detailsSection);
+    }
+
+    container.appendChild(header);
+    container.appendChild(errorSection);
+    
+    return container;
+  }
+
+  static clearAndAppendChildren(parent, children) {
+    // Clear existing content
+    while (parent.firstChild) {
+      parent.removeChild(parent.firstChild);
+    }
+    
+    // Append new children
+    children.forEach(child => {
+      if (child) {
+        parent.appendChild(child);
+      }
+    });
   }
 }
 
@@ -188,14 +340,22 @@ class DataValidator {
     };
   }
 
-  static sanitizeHtml(text) {
+  static sanitizeText(text) {
     if (typeof text !== 'string') {
       return String(text || '');
     }
     
-    const div = document.createElement('div');
-    div.textContent = text;
-    return div.innerHTML;
+    // Simple text sanitization - remove any potentially harmful characters
+    return text.replace(/[<>&"']/g, char => {
+      switch (char) {
+        case '<': return '&lt;';
+        case '>': return '&gt;';
+        case '&': return '&amp;';
+        case '"': return '&quot;';
+        case "'": return '&#x27;';
+        default: return char;
+      }
+    });
   }
 }
 
@@ -531,7 +691,9 @@ class SafeNixxerOptions {
       const element = this.safeGetElement(id);
       if (element) {
         if (isHTML) {
-          element.innerHTML = content;
+          // REMOVED: innerHTML usage - this was causing the AMO warning!
+          console.warn('HTML content update attempted but innerHTML is not safe to use');
+          return false;
         } else {
           element.textContent = content;
         }
@@ -653,8 +815,17 @@ class SafeNixxerOptions {
       const tableBody = this.safeGetElement('domains-table-body');
       if (!tableBody) return;
       
+      // Clear existing content safely
+      while (tableBody.firstChild) {
+        tableBody.removeChild(tableBody.firstChild);
+      }
+      
       if (this.domains.length === 0) {
-        tableBody.innerHTML = '<tr><td colspan="5" style="text-align: center; color: #718096;">No domains detected yet</td></tr>';
+        const noDataRow = OptionsDOMHelper.createTableRow([
+          { text: 'No domains detected yet', style: 'text-align: center; color: #718096;' }
+        ]);
+        noDataRow.firstChild.colSpan = 5;
+        tableBody.appendChild(noDataRow);
         return;
       }
       
@@ -674,38 +845,49 @@ class SafeNixxerOptions {
           const lastSeen = this.safeFormatDate(domain.lastSeen);
           const types = domain.gaTypes ? domain.gaTypes.join(', ') : 'unknown';
           
-          return `
-            <tr>
-              <td title="${DataValidator.sanitizeHtml(domain.domain)}">${DataValidator.sanitizeHtml(domain.domain)}</td>
-              <td>${firstSeen}</td>
-              <td>${lastSeen}</td>
-              <td>${domain.frequency || 1}</td>
-              <td>${DataValidator.sanitizeHtml(types)}</td>
-            </tr>
-          `;
+          return OptionsDOMHelper.createTableRow([
+            { text: domain.domain, title: domain.domain },
+            firstSeen,
+            lastSeen,
+            String(domain.frequency || 1),
+            types
+          ]);
         } catch (error) {
           errorHandler.log('warn', 'Error formatting domain row', error, { domain });
-          return '<tr><td colspan="5" style="color: #ef4444;">Error displaying domain</td></tr>';
+          return OptionsDOMHelper.createTableRow([
+            { text: 'Error displaying domain', style: 'color: #ef4444;' }
+          ]);
         }
-      }).join('');
+      });
       
-      tableBody.innerHTML = rows;
+      rows.forEach(row => {
+        if (row) tableBody.appendChild(row);
+      });
       
       if (sortedDomains.length > 50) {
-        tableBody.innerHTML += `
-          <tr>
-            <td colspan="5" style="text-align: center; color: #718096; font-style: italic;">
-              Showing 50 of ${sortedDomains.length} detected domains
-            </td>
-          </tr>
-        `;
+        const moreRow = OptionsDOMHelper.createTableRow([
+          { 
+            text: `Showing 50 of ${sortedDomains.length} detected domains`, 
+            style: 'text-align: center; color: #718096; font-style: italic;' 
+          }
+        ]);
+        moreRow.firstChild.colSpan = 5;
+        tableBody.appendChild(moreRow);
       }
       
     } catch (error) {
       errorHandler.log('error', 'Error updating domains table', error);
       const tableBody = this.safeGetElement('domains-table-body');
       if (tableBody) {
-        tableBody.innerHTML = '<tr><td colspan="5" style="text-align: center; color: #ef4444;">Error loading domains</td></tr>';
+        // Clear safely
+        while (tableBody.firstChild) {
+          tableBody.removeChild(tableBody.firstChild);
+        }
+        const errorRow = OptionsDOMHelper.createTableRow([
+          { text: 'Error loading domains', style: 'text-align: center; color: #ef4444;' }
+        ]);
+        errorRow.firstChild.colSpan = 5;
+        tableBody.appendChild(errorRow);
       }
     }
   }
@@ -1012,60 +1194,14 @@ class SafeNixxerOptions {
     try {
       errorHandler.log('info', 'Setting up minimal functionality fallback');
       
-      // Show error in main content area
+      // Replace the main container with error page
       const container = document.querySelector('.container');
-      if (container) {
-        container.innerHTML = `
-          <div class="header">
-            <h1>Nixxer Settings</h1>
-            <p style="color: #ef4444;">⚠️ Extension Error</p>
-          </div>
-          
-          <div class="section">
-            <h2 class="section-title">Error</h2>
-            <p style="color: #ef4444; margin-bottom: 20px;">
-              The options page failed to initialize properly. This may be due to:
-            </p>
-            <ul style="color: #6b7280; margin-bottom: 20px;">
-              <li>Extension permissions issues</li>
-              <li>Storage access problems</li>
-              <li>Browser compatibility issues</li>
-              <li>Corrupted extension data</li>
-            </ul>
-            <div style="margin-top: 20px;">
-              <button onclick="window.location.reload()" class="btn btn-primary">
-                Retry Initialization
-              </button>
-              <button onclick="this.clearAllStorageData()" class="btn btn-danger" style="margin-left: 10px;">
-                Reset Extension Data
-              </button>
-            </div>
-          </div>
-          
-          <div class="section">
-            <h2 class="section-title">Error Log</h2>
-            <div style="background: #f7fafc; padding: 15px; border-radius: 8px; font-family: monospace; font-size: 12px; max-height: 200px; overflow-y: auto;">
-              ${errorHandler.getCriticalErrors().map(error => 
-                `<div style="margin-bottom: 10px; padding: 5px; border-left: 3px solid #ef4444;">
-                  <strong>${error.timestamp}</strong>: ${error.message}
-                  ${error.error ? `<br><span style="color: #6b7280;">${error.error}</span>` : ''}
-                </div>`
-              ).join('')}
-            </div>
-          </div>
-        `;
-        
-        // Add emergency clear function
-        window.clearAllStorageData = async () => {
-          try {
-            if (confirm('This will reset all extension data and reload the page. Continue?')) {
-              await browser.storage.local.clear();
-              window.location.reload();
-            }
-          } catch (error) {
-            alert('Failed to clear storage data: ' + error.message);
-          }
-        };
+      if (container && container.parentNode) {
+        const errorPage = OptionsDOMHelper.createErrorPage(
+          'Extension initialization failed',
+          errorHandler.getCriticalErrors()
+        );
+        container.parentNode.replaceChild(errorPage, container);
       }
       
     } catch (error) {
@@ -1073,15 +1209,19 @@ class SafeNixxerOptions {
       
       // Last resort: basic error display
       try {
-        document.body.innerHTML = `
-          <div style="padding: 40px; text-align: center; font-family: Arial, sans-serif;">
-            <h1 style="color: #ef4444;">Extension Error</h1>
-            <p>The Nixxer options page could not initialize.</p>
-            <button onclick="window.location.reload()" style="padding: 10px 20px; margin: 10px;">
-              Reload Page
-            </button>
-          </div>
-        `;
+        const errorContainer = OptionsDOMHelper.createTextElement('div', 
+          'Critical extension error. Please check the browser console and try reloading the page.');
+        errorContainer.style.cssText = 'padding: 40px; text-align: center; font-family: Arial, sans-serif; color: #ef4444;';
+        
+        const retryButton = document.createElement('button');
+        retryButton.textContent = 'Reload Page';
+        retryButton.style.cssText = 'padding: 10px 20px; margin-top: 20px;';
+        retryButton.onclick = () => window.location.reload();
+        
+        errorContainer.appendChild(document.createElement('br'));
+        errorContainer.appendChild(retryButton);
+        
+        document.body.appendChild(errorContainer);
       } catch (finalError) {
         console.error('Complete options page failure:', finalError);
       }
@@ -1116,54 +1256,32 @@ function safeInitializeOptions() {
   } catch (error) {
     errorHandler.log('error', 'Critical error initializing options page', error);
     
-    // Emergency fallback
+    // Emergency fallback using safe DOM manipulation
     try {
-      const errorDiv = document.createElement('div');
-      errorDiv.style.cssText = `
-        position: fixed;
-        top: 0;
-        left: 0;
-        right: 0;
-        bottom: 0;
-        background: white;
-        padding: 40px;
-        text-align: center;
-        font-family: Arial, sans-serif;
-        z-index: 10000;
-      `;
-      errorDiv.innerHTML = `
-        <h1 style="color: #ef4444; margin-bottom: 20px;">⚠️ Extension Error</h1>
-        <p style="margin-bottom: 20px;">Failed to initialize options page</p>
-        <div style="background: #f7fafc; padding: 15px; border-radius: 8px; margin-bottom: 20px; text-align: left; max-width: 600px; margin-left: auto; margin-right: auto;">
-          <strong>Error:</strong> ${error.message}<br>
-          <small style="color: #6b7280;">Check the browser console for more details</small>
-        </div>
-        <button onclick="window.location.reload()" style="padding: 12px 24px; background: #3b82f6; color: white; border: none; border-radius: 6px; cursor: pointer; margin-right: 10px;">
-          Reload Page
-        </button>
-        <button onclick="this.resetExtension()" style="padding: 12px 24px; background: #ef4444; color: white; border: none; border-radius: 6px; cursor: pointer;">
-          Reset Extension
-        </button>
-      `;
+      const errorPage = OptionsDOMHelper.createErrorPage(
+        error.message,
+        [{ timestamp: new Date().toISOString(), message: error.message, error: error.stack }]
+      );
       
-      // Add reset function
-      window.resetExtension = async () => {
-        try {
-          if (confirm('This will reset all extension data. Continue?')) {
-            await browser.storage.local.clear();
-            alert('Extension data reset. Please reload the page.');
-            window.location.reload();
-          }
-        } catch (resetError) {
-          alert('Failed to reset extension: ' + resetError.message);
-        }
-      };
-      
-      document.body.appendChild(errorDiv);
+      // Clear body and add error page
+      while (document.body.firstChild) {
+        document.body.removeChild(document.body.firstChild);
+      }
+      document.body.appendChild(errorPage);
       
     } catch (emergencyError) {
       console.error('Emergency fallback also failed:', emergencyError);
-      alert('Critical extension error. Please check the browser console and try reloading the page.');
+      
+      // Final fallback
+      try {
+        const finalError = OptionsDOMHelper.createTextElement('div', 
+          'Critical extension error. Please check the browser console and try reloading the page.');
+        finalError.style.cssText = 'padding: 40px; text-align: center; font-family: Arial, sans-serif; color: #ef4444;';
+        document.body.appendChild(finalError);
+      } catch (finalFallbackError) {
+        console.error('Even final fallback failed:', finalFallbackError);
+        alert('Critical extension error. Please check the browser console and try reloading the page.');
+      }
     }
   }
 }
@@ -1208,23 +1326,20 @@ try {
       
       // Final emergency display
       try {
+        const finalErrorDiv = OptionsDOMHelper.createTextElement('div', 
+          'Critical Extension Error. The options page could not be initialized.');
+        finalErrorDiv.style.cssText = 'padding: 40px; text-align: center; font-family: Arial, sans-serif; color: #ef4444;';
+        
+        const retryButton = document.createElement('button');
+        retryButton.textContent = 'Reload Page';
+        retryButton.style.cssText = 'padding: 10px 20px; background: #3b82f6; color: white; border: none; border-radius: 4px; cursor: pointer; margin-top: 20px;';
+        retryButton.onclick = () => window.location.reload();
+        
+        finalErrorDiv.appendChild(document.createElement('br'));
+        finalErrorDiv.appendChild(retryButton);
+        
         if (document.body) {
-          document.body.innerHTML = `
-            <div style="padding: 40px; text-align: center; font-family: Arial, sans-serif; color: #ef4444;">
-              <h1>Critical Extension Error</h1>
-              <p>The options page could not be initialized.</p>
-              <p>Please try:</p>
-              <ul style="text-align: left; display: inline-block; margin: 20px 0;">
-                <li>Reloading this page</li>
-                <li>Restarting your browser</li>
-                <li>Disabling and re-enabling the extension</li>
-                <li>Checking browser console for errors</li>
-              </ul>
-              <button onclick="window.location.reload()" style="padding: 10px 20px; background: #3b82f6; color: white; border: none; border-radius: 4px; cursor: pointer;">
-                Reload Page
-              </button>
-            </div>
-          `;
+          document.body.appendChild(finalErrorDiv);
         }
       } catch (finalDisplayError) {
         console.error('Could not even show final error display:', finalDisplayError);

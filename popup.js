@@ -1,4 +1,4 @@
-// Enhanced Nixxer Popup Script with Comprehensive Error Handling
+// Enhanced Nixxer Popup Script with Safe DOM Manipulation
 
 // Error handling and retry utilities
 class PopupErrorHandler {
@@ -46,37 +46,7 @@ class PopupErrorHandler {
 
   showUserError(message) {
     try {
-      // Create or update error display
-      let errorEl = document.getElementById('popup-error-message');
-      if (!errorEl) {
-        errorEl = document.createElement('div');
-        errorEl.id = 'popup-error-message';
-        errorEl.style.cssText = `
-          position: fixed;
-          top: 10px;
-          left: 10px;
-          right: 10px;
-          background: #fed7d7;
-          color: #742a2a;
-          padding: 8px 12px;
-          border-radius: 4px;
-          font-size: 12px;
-          z-index: 1000;
-          border-left: 4px solid #e53e3e;
-        `;
-        document.body.insertBefore(errorEl, document.body.firstChild);
-      }
-      
-      errorEl.textContent = `Error: ${message}`;
-      errorEl.style.display = 'block';
-      
-      // Auto-hide after 8 seconds
-      setTimeout(() => {
-        if (errorEl && errorEl.parentNode) {
-          errorEl.style.display = 'none';
-        }
-      }, 8000);
-      
+      console.error('User Error:', message);
     } catch (error) {
       console.error('Could not show user error message:', error);
     }
@@ -88,7 +58,6 @@ class PopupErrorHandler {
     
     try {
       const result = await operation();
-      // Reset retry count on success
       this.retryAttempts.delete(retryKey);
       return result;
     } catch (error) {
@@ -96,7 +65,6 @@ class PopupErrorHandler {
       
       if (attempts < this.maxRetries) {
         this.retryAttempts.set(retryKey, attempts + 1);
-        // Exponential backoff
         const delay = Math.min(1000 * Math.pow(2, attempts), 5000);
         await new Promise(resolve => setTimeout(resolve, delay));
         return this.withRetry(operation, operationName);
@@ -220,6 +188,7 @@ class SafeNixxerPopup {
 
   async safeLoadStats() {
     try {
+      
       this.stats = await errorHandler.withTimeout(
         errorHandler.withRetry(async () => {
           const response = await browser.runtime.sendMessage({ type: 'GET_STATS' });
@@ -268,6 +237,7 @@ class SafeNixxerPopup {
 
   setupSafeEventListeners() {
     try {
+      
       // Toggle button with error handling
       this.safeAddEventListener('toggle-btn', 'click', () => {
         this.safeToggleExtension();
@@ -303,7 +273,6 @@ class SafeNixxerPopup {
           }
         });
 
-        // Close export menu when clicking outside
         document.addEventListener('click', () => {
           try {
             exportMenu.classList.remove('show');
@@ -312,7 +281,6 @@ class SafeNixxerPopup {
           }
         });
 
-        // Export options with error handling
         const exportOptions = document.querySelectorAll('.export-option');
         exportOptions.forEach(option => {
           try {
@@ -363,7 +331,8 @@ class SafeNixxerPopup {
     try {
       const element = document.getElementById(id);
       if (!element) {
-        errorHandler.log('warn', `Element with ID '${id}' not found`);
+        errorHandler.log('debug', `Element with ID '${id}' not found`);
+      } else {
       }
       return element;
     } catch (error) {
@@ -372,15 +341,11 @@ class SafeNixxerPopup {
     }
   }
 
-  safeUpdateElement(id, content, isHTML = false) {
+  safeUpdateElement(id, content) {
     try {
       const element = this.safeGetElement(id);
       if (element) {
-        if (isHTML) {
-          element.innerHTML = content;
-        } else {
-          element.textContent = content;
-        }
+        element.textContent = content;
         return true;
       }
       return false;
@@ -391,7 +356,7 @@ class SafeNixxerPopup {
   }
 
   safeUpdateUI() {
-    try {
+    try {      
       if (!this.stats) {
         this.showErrorState('No data available');
         return;
@@ -461,28 +426,57 @@ class SafeNixxerPopup {
   updateSafeStats() {
     try {
       const statsEl = this.safeGetElement('stats');
-      if (!statsEl) return;
+      if (!statsEl) {
+        return;
+      }
       
-      const statsHTML = `
-        <div class="stat-item">
-          <span class="stat-label">Blocked Today</span>
-          <span class="stat-value">${this.stats.blockedToday.toLocaleString()}</span>
-        </div>
-        <div class="stat-item">
-          <span class="stat-label">Cookies Deleted</span>
-          <span class="stat-value">${this.stats.cookiesDeleted.toLocaleString()}</span>
-        </div>
-        <div class="stat-item">
-          <span class="stat-label">Domains Detected</span>
-          <span class="stat-value">${this.stats.totalDomains.toLocaleString()}</span>
-        </div>
-      `;
+      // Clear existing content safely
+      while (statsEl.firstChild) {
+        statsEl.removeChild(statsEl.firstChild);
+      }
       
-      this.safeUpdateElement('stats', statsHTML, true);
+      // Create stat items using safe DOM manipulation
+      const stats = [
+        { label: 'Blocked Today', value: this.stats.blockedToday.toLocaleString() },
+        { label: 'Cookies Deleted', value: this.stats.cookiesDeleted.toLocaleString() },
+        { label: 'Domains Detected', value: this.stats.totalDomains.toLocaleString() }
+      ];
+      
+      stats.forEach((stat, index) => {
+        try {
+          
+          const statItem = document.createElement('div');
+          statItem.className = 'stat-item';
+          
+          const statLabel = document.createElement('span');
+          statLabel.className = 'stat-label';
+          statLabel.textContent = stat.label;
+          
+          const statValue = document.createElement('span');
+          statValue.className = 'stat-value';
+          statValue.textContent = stat.value;
+          
+          statItem.appendChild(statLabel);
+          statItem.appendChild(statValue);
+          statsEl.appendChild(statItem);
+          
+        } catch (itemError) {
+        }
+      });
       
     } catch (error) {
       errorHandler.log('error', 'Error updating stats', error);
-      this.safeUpdateElement('stats', '<div class="error">Failed to load statistics</div>', true);
+      const statsEl = this.safeGetElement('stats');
+      if (statsEl) {
+        // Clear safely
+        while (statsEl.firstChild) {
+          statsEl.removeChild(statsEl.firstChild);
+        }
+        const errorElement = document.createElement('div');
+        errorElement.className = 'error';
+        errorElement.textContent = 'Failed to load statistics';
+        statsEl.appendChild(errorElement);
+      }
     }
   }
 
@@ -491,7 +485,9 @@ class SafeNixxerPopup {
       const recentSection = this.safeGetElement('recent-section');
       const domainList = this.safeGetElement('domain-list');
       
-      if (!recentSection || !domainList) return;
+      if (!recentSection || !domainList) {
+        return;
+      }
 
       if (!this.stats.recentDomains || this.stats.recentDomains.length === 0) {
         recentSection.style.display = 'none';
@@ -500,41 +496,94 @@ class SafeNixxerPopup {
 
       recentSection.style.display = 'block';
 
-      const domainsHTML = this.stats.recentDomains.map(domainData => {
+      // Clear existing content safely
+      while (domainList.firstChild) {
+        domainList.removeChild(domainList.firstChild);
+      }
+
+      this.stats.recentDomains.forEach((domainData, index) => {
         try {
           const domain = validateDomainData(domainData);
-          if (!domain) return '';
+          if (!domain) {
+            return;
+          }
           
           const lastSeen = this.safeFormatTime(domain.lastSeen);
-          const types = domain.types.join(', ');
           const trackingType = this.determineSafeTrackingType(domain);
           
-          return `
-            <div class="domain-item">
-              <div class="domain-header">
-                <span class="domain-name" title="${this.escapeHtml(domain.domain)}">${this.escapeHtml(domain.domain)}</span>
-                <span class="tracking-type ${trackingType.class}">${trackingType.label}</span>
-              </div>
-              <div class="domain-details">
-                <div class="domain-info">
-                  <span>${domain.frequency}x</span>
-                  <span>${lastSeen}</span>
-                </div>
-                ${domain.hostDomain ? `<span class="domain-source">Found on: ${this.escapeHtml(domain.hostDomain)}</span>` : ''}
-              </div>
-            </div>
-          `;
+          // Create domain item
+          const domainItem = document.createElement('div');
+          domainItem.className = 'domain-item';
+
+          // Create domain header
+          const domainHeader = document.createElement('div');
+          domainHeader.className = 'domain-header';
+
+          const domainName = document.createElement('span');
+          domainName.className = 'domain-name';
+          domainName.textContent = domain.domain;
+          domainName.title = domain.domain;
+
+          const trackingTypeSpan = document.createElement('span');
+          trackingTypeSpan.className = `tracking-type ${trackingType.class}`;
+          trackingTypeSpan.textContent = trackingType.label;
+
+          domainHeader.appendChild(domainName);
+          domainHeader.appendChild(trackingTypeSpan);
+
+          // Create domain details
+          const domainDetails = document.createElement('div');
+          domainDetails.className = 'domain-details';
+
+          const domainInfo = document.createElement('div');
+          domainInfo.className = 'domain-info';
+
+          const frequency = document.createElement('span');
+          frequency.textContent = `${domain.frequency}x`;
+
+          const lastSeenSpan = document.createElement('span');
+          lastSeenSpan.textContent = lastSeen;
+
+          domainInfo.appendChild(frequency);
+          domainInfo.appendChild(lastSeenSpan);
+          domainDetails.appendChild(domainInfo);
+
+          if (domain.hostDomain) {
+            const domainSource = document.createElement('span');
+            domainSource.className = 'domain-source';
+            domainSource.textContent = `Found on: ${domain.hostDomain}`;
+            domainDetails.appendChild(domainSource);
+          }
+
+          domainItem.appendChild(domainHeader);
+          domainItem.appendChild(domainDetails);
+          domainList.appendChild(domainItem);
+          
         } catch (error) {
           errorHandler.log('warn', 'Error processing domain data', error, { domain: domainData });
-          return '';
         }
-      }).filter(html => html).join('');
+      });
 
-      this.safeUpdateElement('domain-list', domainsHTML || '<div class="no-data">No recent detections</div>', true);
+      if (domainList.children.length === 0) {
+        const noDataElement = document.createElement('div');
+        noDataElement.className = 'no-data';
+        noDataElement.textContent = 'No recent detections';
+        domainList.appendChild(noDataElement);
+      }
       
     } catch (error) {
       errorHandler.log('error', 'Error updating recent domains', error);
-      this.safeUpdateElement('domain-list', '<div class="error">Failed to load recent detections</div>', true);
+      const domainList = this.safeGetElement('domain-list');
+      if (domainList) {
+        // Clear safely
+        while (domainList.firstChild) {
+          domainList.removeChild(domainList.firstChild);
+        }
+        const errorElement = document.createElement('div');
+        errorElement.className = 'error';
+        errorElement.textContent = 'Failed to load recent detections';
+        domainList.appendChild(errorElement);
+      }
     }
   }
 
@@ -750,22 +799,6 @@ class SafeNixxerPopup {
     }
   }
 
-  escapeHtml(text) {
-    try {
-      if (typeof text !== 'string') {
-        return String(text || '');
-      }
-      
-      const div = document.createElement('div');
-      div.textContent = text;
-      return div.innerHTML;
-      
-    } catch (error) {
-      errorHandler.log('warn', 'Error escaping HTML', error, { text });
-      return String(text || '');
-    }
-  }
-
   showSuccess(message) {
     try {
       this.showNotification(message, 'success', '#4ade80');
@@ -844,15 +877,33 @@ class SafeNixxerPopup {
     try {
       const statsEl = this.safeGetElement('stats');
       if (statsEl) {
-        statsEl.innerHTML = `
-          <div class="error" style="text-align: center; color: #ef4444; padding: 20px;">
-            <div style="font-size: 16px; margin-bottom: 8px;">⚠️ Error</div>
-            <div style="font-size: 12px;">${this.escapeHtml(message)}</div>
-            <div style="font-size: 11px; margin-top: 8px; opacity: 0.7;">
-              Try refreshing or check extension permissions
-            </div>
-          </div>
-        `;
+        // Clear existing content safely
+        while (statsEl.firstChild) {
+          statsEl.removeChild(statsEl.firstChild);
+        }
+        
+        // Use safe DOM manipulation
+        const errorContainer = document.createElement('div');
+        errorContainer.className = 'error';
+        errorContainer.style.cssText = 'text-align: center; color: #ef4444; padding: 20px;';
+        
+        const errorIcon = document.createElement('div');
+        errorIcon.textContent = '⚠️ Error';
+        errorIcon.style.cssText = 'font-size: 16px; margin-bottom: 8px;';
+        
+        const errorMessage = document.createElement('div');
+        errorMessage.textContent = message;
+        errorMessage.style.cssText = 'font-size: 12px;';
+        
+        const errorHint = document.createElement('div');
+        errorHint.textContent = 'Try refreshing or check extension permissions';
+        errorHint.style.cssText = 'font-size: 11px; margin-top: 8px; opacity: 0.7;';
+        
+        errorContainer.appendChild(errorIcon);
+        errorContainer.appendChild(errorMessage);
+        errorContainer.appendChild(errorHint);
+        
+        statsEl.appendChild(errorContainer);
       }
       
       // Hide other sections
@@ -914,7 +965,6 @@ function safeInitializePopup() {
   try {
     // Check if we're in a valid popup environment
     if (typeof document === 'undefined' || typeof window === 'undefined') {
-      console.error('Not in valid popup environment');
       return;
     }
     
@@ -923,7 +973,6 @@ function safeInitializePopup() {
     const missingElements = requiredElements.filter(id => !document.getElementById(id));
     
     if (missingElements.length > 0) {
-      console.warn('Missing required elements:', missingElements);
       // Continue anyway - the popup will handle missing elements gracefully
     }
     
@@ -931,22 +980,42 @@ function safeInitializePopup() {
     new SafeNixxerPopup();
     
   } catch (error) {
-    console.error('Critical error initializing popup:', error);
     
-    // Last resort error display
+    // Last resort error display using safe DOM manipulation
     try {
-      document.body.innerHTML = `
-        <div style="padding: 20px; text-align: center; color: #ef4444;">
-          <div style="font-size: 16px; margin-bottom: 10px;">⚠️ Extension Error</div>
-          <div style="font-size: 12px; margin-bottom: 10px;">Failed to initialize popup</div>
-          <div style="font-size: 11px; opacity: 0.7;">${error.message}</div>
-          <button onclick="window.location.reload()" style="margin-top: 10px; padding: 8px 16px;">
-            Retry
-          </button>
-        </div>
-      `;
+      // Clear body content safely
+      while (document.body.firstChild) {
+        document.body.removeChild(document.body.firstChild);
+      }
+      
+      const errorContainer = document.createElement('div');
+      errorContainer.style.cssText = 'padding: 20px; text-align: center; color: #ef4444;';
+      
+      const errorTitle = document.createElement('div');
+      errorTitle.textContent = '⚠️ Extension Error';
+      errorTitle.style.cssText = 'font-size: 16px; margin-bottom: 10px;';
+      
+      const errorText = document.createElement('div');
+      errorText.textContent = 'Failed to initialize popup';
+      errorText.style.cssText = 'font-size: 12px; margin-bottom: 10px;';
+      
+      const errorDetails = document.createElement('div');
+      errorDetails.textContent = error.message;
+      errorDetails.style.cssText = 'font-size: 11px; opacity: 0.7;';
+      
+      const retryButton = document.createElement('button');
+      retryButton.textContent = 'Retry';
+      retryButton.style.cssText = 'margin-top: 10px; padding: 8px 16px;';
+      retryButton.onclick = () => window.location.reload();
+      
+      errorContainer.appendChild(errorTitle);
+      errorContainer.appendChild(errorText);
+      errorContainer.appendChild(errorDetails);
+      errorContainer.appendChild(retryButton);
+      
+      document.body.appendChild(errorContainer);
+
     } catch (displayError) {
-      console.error('Could not even show error state:', displayError);
     }
   }
 }
@@ -958,7 +1027,6 @@ try {
       try {
         safeInitializePopup();
       } catch (error) {
-        console.error('Error in DOMContentLoaded handler:', error);
       }
     });
     
@@ -969,7 +1037,6 @@ try {
           safeInitializePopup();
         }
       } catch (error) {
-        console.error('Error in fallback initialization:', error);
       }
     }, 2000);
     
@@ -979,14 +1046,12 @@ try {
   }
   
 } catch (error) {
-  console.error('Critical error in popup initialization setup:', error);
-  
+
   // Last resort fallback
   setTimeout(() => {
     try {
       safeInitializePopup();
     } catch (lastResortError) {
-      console.error('Complete popup initialization failure:', lastResortError);
     }
   }, 3000);
 }
@@ -994,12 +1059,9 @@ try {
 // Global error handlers for the popup
 try {
   window.addEventListener('error', (event) => {
-    console.error('Unhandled error in popup:', event.error);
   });
   
   window.addEventListener('unhandledrejection', (event) => {
-    console.error('Unhandled promise rejection in popup:', event.reason);
   });
 } catch (error) {
-  console.error('Could not set up global error handlers:', error);
 }
