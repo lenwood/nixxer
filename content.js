@@ -853,23 +853,51 @@ class SafeNixxerDetector {
         oldKeys.forEach(key => this.detected.delete(key));
       }
       
-      const domainToReport = targetDomain || this.domain;
+      // FIXED: Ensure clear separation between tracking domain and website domain
+      let trackingDomain = targetDomain || this.domain;
+      let websiteDomain = this.domain;
       
-      // Safe message sending with error handling
+      // For external script sources, extract the actual tracking domain
+      if (method === 'script' && typeof details === 'string' && details.includes('script:')) {
+        try {
+          const scriptUrl = details.split('script: ')[1];
+          if (scriptUrl) {
+            const url = new URL(scriptUrl);
+            trackingDomain = url.hostname;
+          }
+        } catch (error) {
+          logger.log('warn', 'Error parsing script URL', error);
+        }
+      }
+      
+      // For measurement protocol, extract domain from URL
+      if (method === 'measurement' && typeof details === 'string' && details.includes('http')) {
+        try {
+          const urlMatch = details.match(/https?:\/\/([^\/\s"']+)/);
+          if (urlMatch) {
+            trackingDomain = urlMatch[1];
+          }
+        } catch (error) {
+          logger.log('warn', 'Error parsing measurement URL', error);
+        }
+      }
+      
+      // Safe message sending with clear domain separation
       this.sendSafeMessage({
         type: 'GA_DETECTED',
-        domain: domainToReport,
+        domain: trackingDomain,              // The tracking service domain
+        websiteDomain: websiteDomain,        // The website being visited
         method: method,
         details: details,
         timestamp: Date.now(),
-        url: this.getCurrentUrl(),
-        hostDomain: this.domain
+        url: this.getCurrentUrl()
       });
       
       logger.log('debug', 'Detection reported', null, { 
         method, 
         details, 
-        domain: domainToReport 
+        trackingDomain: trackingDomain,
+        websiteDomain: websiteDomain
       });
       
     } catch (error) {

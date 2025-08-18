@@ -282,7 +282,7 @@ class DataValidator {
     }
     
     // Validate boolean settings
-    ['blockSelfHosted', 'debugLogging', 'autoCleanup'].forEach(key => {
+    ['blockSelfHosted', 'debugLogging', 'deleteZombieCookies', 'autoCleanup'].forEach(key => {
       if (settings[key] !== undefined) {
         validated[key] = Boolean(settings[key]);
       }
@@ -368,6 +368,7 @@ class SafeNixxerOptions {
       detectionSensitivity: 'high',
       blockSelfHosted: true,
       debugLogging: false,
+      deleteZombieCookies: true,
       maxHostsEntries: 500,
       autoExportThreshold: 450,
       autoCleanup: true,
@@ -518,6 +519,7 @@ class SafeNixxerOptions {
       // Checkboxes with error handling
       this.setupSafeCheckbox('block-self-hosted', 'blockSelfHosted');
       this.setupSafeCheckbox('debug-logging', 'debugLogging');
+      this.setupSafeCheckbox('delete-zombie-cookies', 'deleteZombieCookies');
       this.setupSafeCheckbox('auto-cleanup', 'autoCleanup');
       
       // Action buttons with error handling
@@ -722,6 +724,7 @@ class SafeNixxerOptions {
       // Update checkboxes
       this.safeSetChecked('block-self-hosted', this.settings.blockSelfHosted);
       this.safeSetChecked('debug-logging', this.settings.debugLogging);
+      this.safeSetChecked('delete-zombie-cookies', this.settings.deleteZombieCookies);
       this.safeSetChecked('auto-cleanup', this.settings.autoCleanup);
       
       // Update statistics
@@ -951,7 +954,7 @@ class SafeNixxerOptions {
         domains: this.domains,
         statistics: this.statistics,
         exportedAt: new Date().toISOString(),
-        version: '1.2.0',
+        version: '1.3.0',
         criticalErrors: errorHandler.getCriticalErrors()
       };
       
@@ -1103,6 +1106,7 @@ class SafeNixxerOptions {
         detectionSensitivity: 'high',
         blockSelfHosted: true,
         debugLogging: false,
+        deleteZombieCookies: true,
         maxHostsEntries: 500,
         autoExportThreshold: 450,
         autoCleanup: true,

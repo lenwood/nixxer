@@ -310,7 +310,8 @@ class NixxerCore {
       exportFormat: 'pihole',
       blockSelfHosted: true,
       debugLogging: false,
-      autoCleanup: true
+      autoCleanup: true,
+      deleteZombieCookies: true
     };
     
     this.performanceStats = {
@@ -533,13 +534,43 @@ class NixxerCore {
                 return {};
               }
               
+              // Get the website domain from the tab information
+              let websiteDomain = hostname; // fallback
+              if (details.tabId && details.tabId !== -1) {
+                try {
+                  // Get tab info to determine the actual website
+                  browser.tabs.get(details.tabId).then(tab => {
+                    if (tab && tab.url) {
+                      try {
+                        const tabUrl = new URL(tab.url);
+                        const tabHostname = tabUrl.hostname;
+                        
+                        // If the tracking domain is different from the tab domain, 
+                        // then the tab domain is the website domain
+                        if (hostname !== tabHostname) {
+                          this.handleTrackerDetection(hostname, 'request', details.url, tabHostname);
+                        }
+                      } catch (tabUrlError) {
+                        logger.log('warn', 'Error parsing tab URL', tabUrlError);
+                      }
+                    }
+                  }).catch(tabError => {
+                    logger.log('warn', 'Error getting tab info', tabError);
+                  });
+                } catch (error) {
+                  logger.log('warn', 'Error accessing tab info', error);
+                }
+              }
+              
               const blockingInfo = this.determineBlockingTarget(hostname, 'request', details.url);
               
               if (blockingInfo.shouldBlock) {
-                this.handleTrackerDetection(hostname, 'request', details.url);
                 this.blockedToday++;
                 
-                logger.log('debug', 'Blocked tracking request', null, { url: details.url });
+                logger.log('debug', 'Blocked tracking request', null, { 
+                  url: details.url,
+                  websiteDomain: websiteDomain 
+                });
                 
                 this.updatePerformanceStats(startTime, true);
                 return { cancel: true };
@@ -622,6 +653,9 @@ class NixxerCore {
         try {
           if (!this.isEnabled || changeInfo.removed) return;
           
+          // Check if cookie deletion is enabled
+          if (!this.settings.deleteZombieCookies) return;
+          
           const cookie = changeInfo.cookie;
           if (!cookie || !cookie.name) return;
           
@@ -640,7 +674,9 @@ class NixxerCore {
       
       setInterval(() => {
         try {
-          this.cleanupCookies();
+          if (this.settings.deleteZombieCookies) {
+            this.cleanupCookies();
+          }
         } catch (error) {
           logger.log('warn', 'Error in periodic cookie cleanup', error);
         }
@@ -685,7 +721,8 @@ class NixxerCore {
         case 'GA_DETECTED':
           try {
             const domain = validateDomain(message.domain || '');
-            await this.handleTrackerDetection(domain, message.method, message.details);
+            const websiteDomain = message.websiteDomain ? validateDomain(message.websiteDomain) : null;
+            await this.handleTrackerDetection(domain, message.method, message.details, websiteDomain);
             sendResponse({ success: true });
           } catch (error) {
             logger.log('warn', 'Error handling GA detection', error);
@@ -872,10 +909,14 @@ class NixxerCore {
     }
   }
 
-  async handleTrackerDetection(domain, method, details) {
+  async handleTrackerDetection(domain, method, details, websiteDomain = null) {
     try {
       const now = Date.now();
       const cleanDomain = validateDomain(domain);
+      
+      // FIXED: Use websiteDomain from message if available
+      const actualWebsiteDomain = websiteDomain || cleanDomain;
+      
       const blockingInfo = this.determineBlockingTarget(cleanDomain, method, details);
       
       if (!blockingInfo.shouldBlock) {
@@ -887,8 +928,12 @@ class NixxerCore {
         const domainKey = blockingInfo.targetDomain.startsWith('.') ? 
           blockingInfo.targetDomain.slice(1) : blockingInfo.targetDomain;
         
-        this.updateDetectedDomain(domainKey, method, details, cleanDomain, now);
-        logger.log('debug', 'Added tracking domain to blocklist', null, { domain: domainKey });
+        // FIXED: Store both tracking domain and website domain
+        this.updateDetectedDomain(domainKey, method, details, actualWebsiteDomain, now);
+        logger.log('debug', 'Added tracking domain to blocklist', null, { 
+          trackingDomain: domainKey, 
+          websiteDomain: actualWebsiteDomain 
+        });
       }
       
       if (this.detectedDomains.size >= this.settings.autoExportThreshold) {
@@ -936,7 +981,7 @@ class NixxerCore {
     }
   }
 
-  updateDetectedDomain(domainKey, method, details, hostDomain, timestamp) {
+  updateDetectedDomain(domainKey, method, details, websiteDomain, timestamp) {
     try {
       if (!this.detectedDomains.has(domainKey)) {
         this.detectedDomains.set(domainKey, {
@@ -946,7 +991,7 @@ class NixxerCore {
           gaTypes: [method],
           blocked: true,
           details: [details],
-          hostDomain: hostDomain
+          websiteDomain: websiteDomain  // FIXED: Store the actual website domain
         });
       } else {
         const existing = this.detectedDomains.get(domainKey);
@@ -959,6 +1004,11 @@ class NixxerCore {
         
         if (existing.details.length < 5) {
           existing.details.push(details);
+        }
+        
+        // Update website domain if not set or if it's different
+        if (!existing.websiteDomain || existing.websiteDomain === domainKey) {
+          existing.websiteDomain = websiteDomain;
         }
       }
     } catch (error) {
@@ -1114,7 +1164,7 @@ class NixxerCore {
   }
 
   async cleanupCookies() {
-    if (!this.isEnabled) return;
+    if (!this.isEnabled || !this.settings.deleteZombieCookies) return;
     
     try {
       const allCookies = await withTimeout(
@@ -1209,11 +1259,11 @@ class NixxerCore {
         settings: this.settings,
         performance: this.performanceStats,
         recentDomains: recentDomains.map(([domain, data]) => ({
-          domain,
+          domain,                                    // This is the tracking domain
           lastSeen: data.lastSeen || Date.now(),
           frequency: data.frequency || 1,
           types: data.gaTypes || ['unknown'],
-          hostDomain: data.hostDomain || domain
+          websiteDomain: data.websiteDomain || null  // FIXED: This is where it was found
         }))
       };
       

@@ -1,7 +1,7 @@
 {
   "manifest_version": 2,
   "name": "Nixxer",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Comprehensive web tracking protection with intelligent network-level blocklist management. Blocks Google Analytics, Facebook tracking, Adobe Analytics, session recording, and more.",
   
   "permissions": [

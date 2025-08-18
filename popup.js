@@ -114,7 +114,7 @@ function validateDomainData(domain) {
     lastSeen: parseInt(domain.lastSeen) || Date.now(),
     frequency: Math.max(1, parseInt(domain.frequency) || 1),
     types: Array.isArray(domain.types) ? domain.types : ['unknown'],
-    hostDomain: domain.hostDomain ? String(domain.hostDomain) : null
+    websiteDomain: domain.websiteDomain ? String(domain.websiteDomain) : null  // FIXED: Use websiteDomain
   };
 }
 
@@ -215,6 +215,7 @@ class SafeNixxerPopup {
         cookiesDeleted: 0,
         totalDomains: 0,
         recentDomains: [],
+        settings: {},
         error: error.message
       };
     }
@@ -435,10 +436,17 @@ class SafeNixxerPopup {
         statsEl.removeChild(statsEl.firstChild);
       }
       
+      // Check if cookie deletion is enabled
+      const cookieDeletionEnabled = this.stats.settings && this.stats.settings.deleteZombieCookies !== false;
+      
       // Create stat items using safe DOM manipulation
       const stats = [
         { label: 'Blocked Today', value: this.stats.blockedToday.toLocaleString() },
-        { label: 'Cookies Deleted', value: this.stats.cookiesDeleted.toLocaleString() },
+        { 
+          label: 'Cookies Deleted', 
+          value: cookieDeletionEnabled ? this.stats.cookiesDeleted.toLocaleString() : 'Disabled',
+          disabled: !cookieDeletionEnabled
+        },
         { label: 'Domains Detected', value: this.stats.totalDomains.toLocaleString() }
       ];
       
@@ -447,13 +455,16 @@ class SafeNixxerPopup {
           
           const statItem = document.createElement('div');
           statItem.className = 'stat-item';
+          if (stat.disabled) {
+            statItem.classList.add('disabled');
+          }
           
           const statLabel = document.createElement('span');
           statLabel.className = 'stat-label';
           statLabel.textContent = stat.label;
           
           const statValue = document.createElement('span');
-          statValue.className = 'stat-value';
+          statValue.className = stat.disabled ? 'stat-value disabled' : 'stat-value';
           statValue.textContent = stat.value;
           
           statItem.appendChild(statLabel);
@@ -521,7 +532,7 @@ class SafeNixxerPopup {
 
           const domainName = document.createElement('span');
           domainName.className = 'domain-name';
-          domainName.textContent = domain.domain;
+          domainName.textContent = domain.domain;  // This shows the tracking domain
           domainName.title = domain.domain;
 
           const trackingTypeSpan = document.createElement('span');
@@ -548,10 +559,11 @@ class SafeNixxerPopup {
           domainInfo.appendChild(lastSeenSpan);
           domainDetails.appendChild(domainInfo);
 
-          if (domain.hostDomain) {
+          // Show the website domain where the tracker was found
+          if (domain.websiteDomain && domain.websiteDomain !== domain.domain) {
             const domainSource = document.createElement('span');
             domainSource.className = 'domain-source';
-            domainSource.textContent = `Found on: ${domain.hostDomain}`;
+            domainSource.textContent = `Found on: ${domain.websiteDomain}`;
             domainDetails.appendChild(domainSource);
           }
 
@@ -629,14 +641,14 @@ class SafeNixxerPopup {
         return { class: 'third-party', label: '3rd Party' };
       }
       
-      // Check if domain matches the host domain (indicating first-party)
-      if (domain.hostDomain && domain.domain === domain.hostDomain) {
-        return { class: 'first-party', label: '1st Party' };
+      // FIXED: Check if tracking domain is different from website domain
+      if (domain.websiteDomain && domain.domain !== domain.websiteDomain) {
+        return { class: 'third-party', label: '3rd Party' };
       }
       
-      // Check if domain is different from host domain
-      if (domain.hostDomain && domain.domain !== domain.hostDomain) {
-        return { class: 'third-party', label: '3rd Party' };
+      // Check if domain matches the website domain (indicating first-party)
+      if (domain.websiteDomain && domain.domain === domain.websiteDomain) {
+        return { class: 'first-party', label: '1st Party' };
       }
       
       // Mixed or unknown case
