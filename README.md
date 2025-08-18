@@ -372,6 +372,22 @@ This extension is provided under the MIT License for educational and privacy pro
 
 ## Changelog
 
+### Version 1.1.0
+
+- **Fixed:**
+
+  - **Fixed popup display issue**: The "Found on:" field in the Recent Detections pane now correctly shows the website where trackers were discovered, instead of incorrectly showing the tracker domain name
+  - **Improved tracking context**: Enhanced domain tracking logic to properly distinguish between tracking domains (e.g., `google-analytics.com`) and the websites where they're found (e.g., `cnn.com`)
+  - **Better user clarity**: Users can now easily see which websites are using tracking scripts, making it clearer where their data is being collected
+
+- **New Feature:**
+
+  - **User-Controllable Cookie Deletion**: Added new setting in options page to enable/disable automatic zombie cookie deletion
+  - New "Cookie Management" section in settings with toggle for zombie cookie deletion
+  - Users can now disable cookie deletion while keeping tracker detection and network blocking active
+  - Setting is enabled by default to preserve existing behavior for current users
+
+
 ### Version 1.0.0 - Initial Release
 - **🛡️ Multi-Platform Tracking Protection** - Google Analytics, Facebook/Meta, Adobe Analytics, TikTok, session recording tools
 - **🎯 Intelligent Detection Methods** - Real-time request blocking, cookie pattern matching, JavaScript function detection
